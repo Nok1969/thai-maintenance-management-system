@@ -102,7 +102,7 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    // Use the actual Replit domain from environment variable
+    // Use the first (and typically only) domain from REPLIT_DOMAINS
     const domain = process.env.REPLIT_DOMAINS!.split(",")[0];
     passport.authenticate(`replitauth:${domain}`, {
       prompt: "login consent",
@@ -111,7 +111,7 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    // Use the actual Replit domain from environment variable
+    // Use the first (and typically only) domain from REPLIT_DOMAINS
     const domain = process.env.REPLIT_DOMAINS!.split(",")[0];
     passport.authenticate(`replitauth:${domain}`, {
       successReturnToOrRedirect: "/",
