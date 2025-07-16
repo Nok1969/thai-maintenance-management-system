@@ -14,7 +14,8 @@ This is a full-stack maintenance management system built for industrial machiner
 
 ✓ **Authentication System Fixed**:
 - Resolved Replit Auth domain mapping issues
-- Login system now working properly
+- Fixed session cookie security settings for development
+- Login system now working properly with 302 redirects
 - Session management functioning correctly
 
 ✓ **Machine History System Implemented**:
