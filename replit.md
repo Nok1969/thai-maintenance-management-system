@@ -4,6 +4,25 @@
 
 This is a full-stack maintenance management system built for industrial machinery tracking and maintenance scheduling. The application provides a comprehensive solution for managing machines, scheduling maintenance tasks, recording maintenance activities, and generating reports. It's designed with a modern tech stack using React, Express, and PostgreSQL with Thai language support for the user interface.
 
+## Recent Changes (July 16, 2025)
+
+✓ **Complete Documentation Suite Created**:
+- User manual with detailed step-by-step instructions
+- Workflow guide with role-based processes  
+- Technical documentation for developers
+- Main README with project overview
+
+✓ **Authentication System Fixed**:
+- Resolved Replit Auth domain mapping issues
+- Login system now working properly
+- Session management functioning correctly
+
+✓ **Machine History System Implemented**:
+- Automatic change tracking for machine updates
+- Machine details dialog with tabbed interface
+- Location-based filtering functionality
+- Complete audit trail for all machine changes
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -104,7 +123,11 @@ Preferred communication style: Simple, everyday language.
 - `/client`: React frontend application
 - `/server`: Express backend API
 - `/shared`: Common TypeScript types and schemas
-- `/migrations`: Database migration files
+- `/docs`: Complete documentation suite
+  - `user-manual.md`: Detailed user instructions
+  - `workflow-guide.md`: Role-based workflows and processes
+  - `technical-documentation.md`: Technical architecture and API docs
+  - `README.md`: Project overview and quick start guide
 
 ### Runtime Requirements
 - Node.js environment with ES module support
