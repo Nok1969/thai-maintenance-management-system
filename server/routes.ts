@@ -109,7 +109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const machineData = insertMachineSchema.partial().parse(req.body);
-      const machine = await storage.updateMachine(id, machineData);
+      const userId = (req.user as any)?.claims?.sub;
+      const machine = await storage.updateMachine(id, machineData, userId);
       res.json(machine);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -128,6 +129,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting machine:", error);
       res.status(500).json({ message: "Failed to delete machine" });
+    }
+  });
+
+  // Machine history routes
+  app.get("/api/machines/:id/history", isAuthenticated, async (req, res) => {
+    try {
+      const machineId = parseInt(req.params.id);
+      const history = await storage.getMachineHistory(machineId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching machine history:", error);
+      res.status(500).json({ message: "Failed to fetch machine history" });
     }
   });
 

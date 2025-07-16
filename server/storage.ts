@@ -3,6 +3,7 @@ import {
   machines,
   maintenanceSchedules,
   maintenanceRecords,
+  machineHistory,
   type User,
   type UpsertUser,
   type Machine,
@@ -11,9 +12,12 @@ import {
   type InsertMaintenanceSchedule,
   type MaintenanceRecord,
   type InsertMaintenanceRecord,
+  type MachineHistory,
+  type InsertMachineHistory,
   type MachineWithSchedules,
   type MaintenanceScheduleWithMachine,
   type MaintenanceRecordWithDetails,
+  type MachineHistoryWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, gte, lte, isNull, or, like, sql } from "drizzle-orm";
@@ -63,6 +67,10 @@ export interface IStorage {
     maintenanceCount: number;
     status: 'scheduled' | 'pending' | 'overdue';
   }[]>;
+
+  // Machine history operations
+  getMachineHistory(machineId: number): Promise<MachineHistoryWithDetails[]>;
+  createMachineHistory(history: InsertMachineHistory): Promise<MachineHistory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -124,12 +132,57 @@ export class DatabaseStorage implements IStorage {
     return newMachine;
   }
 
-  async updateMachine(id: number, machine: Partial<InsertMachine>): Promise<Machine> {
+  async updateMachine(id: number, machine: Partial<InsertMachine>, changedBy?: string): Promise<Machine> {
+    // Get the old machine data for history tracking
+    const oldMachine = await this.getMachine(id);
+    
     const [updatedMachine] = await db
       .update(machines)
       .set({ ...machine, updatedAt: new Date() })
       .where(eq(machines.id, id))
       .returning();
+
+    // Create history record if changedBy is provided
+    if (changedBy && oldMachine) {
+      const changes: Record<string, { old: any; new: any }> = {};
+      
+      // Track changes for important fields
+      const fieldsToTrack = ['location', 'status', 'name', 'type', 'department'];
+      fieldsToTrack.forEach(field => {
+        if (machine[field as keyof InsertMachine] !== undefined && 
+            oldMachine[field as keyof Machine] !== machine[field as keyof InsertMachine]) {
+          changes[field] = {
+            old: oldMachine[field as keyof Machine],
+            new: machine[field as keyof InsertMachine]
+          };
+        }
+      });
+
+      if (Object.keys(changes).length > 0) {
+        let changeDescription = 'อัปเดตข้อมูลเครื่องจักร: ';
+        const changeDescriptions = Object.entries(changes).map(([field, { old, new: newVal }]) => {
+          const fieldNames: Record<string, string> = {
+            location: 'ตำแหน่ง',
+            status: 'สถานะ',
+            name: 'ชื่อ',
+            type: 'ประเภท',
+            department: 'แผนก'
+          };
+          return `${fieldNames[field] || field}: ${old} → ${newVal}`;
+        });
+        changeDescription += changeDescriptions.join(', ');
+
+        await this.createMachineHistory({
+          machineId: id,
+          changeType: 'updated',
+          changeDescription,
+          oldValues: changes,
+          newValues: changes,
+          changedBy,
+        });
+      }
+    }
+
     return updatedMachine;
   }
 
@@ -279,7 +332,7 @@ export class DatabaseStorage implements IStorage {
 
   // Maintenance record operations
   async getMaintenanceRecords(): Promise<MaintenanceRecordWithDetails[]> {
-    return await db
+    const results = await db
       .select({
         id: maintenanceRecords.id,
         recordId: maintenanceRecords.recordId,
@@ -307,6 +360,8 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(maintenanceSchedules, eq(maintenanceRecords.scheduleId, maintenanceSchedules.id))
       .innerJoin(users, eq(maintenanceRecords.technicianId, users.id))
       .orderBy(desc(maintenanceRecords.maintenanceDate));
+    
+    return results as MaintenanceRecordWithDetails[];
   }
 
   async getMaintenanceRecord(id: number): Promise<MaintenanceRecordWithDetails | undefined> {
@@ -338,11 +393,11 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(maintenanceSchedules, eq(maintenanceRecords.scheduleId, maintenanceSchedules.id))
       .innerJoin(users, eq(maintenanceRecords.technicianId, users.id))
       .where(eq(maintenanceRecords.id, id));
-    return result;
+    return result as MaintenanceRecordWithDetails | undefined;
   }
 
   async getMaintenanceRecordsByMachine(machineId: number): Promise<MaintenanceRecordWithDetails[]> {
-    return await db
+    const results = await db
       .select({
         id: maintenanceRecords.id,
         recordId: maintenanceRecords.recordId,
@@ -371,10 +426,12 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(maintenanceRecords.technicianId, users.id))
       .where(eq(maintenanceRecords.machineId, machineId))
       .orderBy(desc(maintenanceRecords.maintenanceDate));
+    
+    return results as MaintenanceRecordWithDetails[];
   }
 
   async getMaintenanceRecordsByTechnician(technicianId: string): Promise<MaintenanceRecordWithDetails[]> {
-    return await db
+    const results = await db
       .select({
         id: maintenanceRecords.id,
         recordId: maintenanceRecords.recordId,
@@ -403,6 +460,8 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(maintenanceRecords.technicianId, users.id))
       .where(eq(maintenanceRecords.technicianId, technicianId))
       .orderBy(desc(maintenanceRecords.maintenanceDate));
+
+    return results as MaintenanceRecordWithDetails[];
   }
 
   async createMaintenanceRecord(record: InsertMaintenanceRecord): Promise<MaintenanceRecord> {
@@ -523,6 +582,35 @@ export class DatabaseStorage implements IStorage {
         status,
       };
     });
+  }
+
+  // Machine history operations
+  async getMachineHistory(machineId: number): Promise<MachineHistoryWithDetails[]> {
+    const results = await db
+      .select({
+        id: machineHistory.id,
+        machineId: machineHistory.machineId,
+        changeType: machineHistory.changeType,
+        changeDescription: machineHistory.changeDescription,
+        oldValues: machineHistory.oldValues,
+        newValues: machineHistory.newValues,
+        changedBy: machineHistory.changedBy,
+        createdAt: machineHistory.createdAt,
+        machine: machines,
+        changedByUser: users,
+      })
+      .from(machineHistory)
+      .innerJoin(machines, eq(machineHistory.machineId, machines.id))
+      .innerJoin(users, eq(machineHistory.changedBy, users.id))
+      .where(eq(machineHistory.machineId, machineId))
+      .orderBy(desc(machineHistory.createdAt));
+
+    return results as MachineHistoryWithDetails[];
+  }
+
+  async createMachineHistory(history: InsertMachineHistory): Promise<MachineHistory> {
+    const [newHistory] = await db.insert(machineHistory).values(history).returning();
+    return newHistory;
   }
 }
 

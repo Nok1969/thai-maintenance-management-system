@@ -97,6 +97,18 @@ export const maintenanceRecords = pgTable("maintenance_records", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Machine history table for tracking machine data changes
+export const machineHistory = pgTable("machine_history", {
+  id: serial("id").primaryKey(),
+  machineId: integer("machine_id").references(() => machines.id).notNull(),
+  changeType: varchar("change_type").notNull(), // created, updated, location_changed, status_changed
+  changeDescription: text("change_description").notNull(), // คำอธิบายการเปลี่ยนแปลง
+  oldValues: jsonb("old_values"), // ค่าเก่าก่อนเปลี่ยนแปลง
+  newValues: jsonb("new_values"), // ค่าใหม่หลังเปลี่ยนแปลง
+  changedBy: varchar("changed_by").references(() => users.id).notNull(), // ผู้ทำการเปลี่ยนแปลง
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   maintenanceRecords: many(maintenanceRecords),
@@ -105,6 +117,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const machinesRelations = relations(machines, ({ many }) => ({
   maintenanceSchedules: many(maintenanceSchedules),
   maintenanceRecords: many(maintenanceRecords),
+  history: many(machineHistory),
 }));
 
 export const maintenanceSchedulesRelations = relations(maintenanceSchedules, ({ one, many }) => ({
@@ -130,6 +143,17 @@ export const maintenanceRecordsRelations = relations(maintenanceRecords, ({ one 
   }),
 }));
 
+export const machineHistoryRelations = relations(machineHistory, ({ one }) => ({
+  machine: one(machines, {
+    fields: [machineHistory.machineId],
+    references: [machines.id],
+  }),
+  changedByUser: one(users, {
+    fields: [machineHistory.changedBy],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertMachineSchema = createInsertSchema(machines).omit({
   id: true,
@@ -149,6 +173,11 @@ export const insertMaintenanceRecordSchema = createInsertSchema(maintenanceRecor
   updatedAt: true,
 });
 
+export const insertMachineHistorySchema = createInsertSchema(machineHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -161,6 +190,9 @@ export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
 
 export type InsertMaintenanceRecord = z.infer<typeof insertMaintenanceRecordSchema>;
 export type MaintenanceRecord = typeof maintenanceRecords.$inferSelect;
+
+export type InsertMachineHistory = z.infer<typeof insertMachineHistorySchema>;
+export type MachineHistory = typeof machineHistory.$inferSelect;
 
 // Extended types with relations
 export type MachineWithSchedules = Machine & {
@@ -176,4 +208,9 @@ export type MaintenanceRecordWithDetails = MaintenanceRecord & {
   machine: Machine;
   schedule?: MaintenanceSchedule;
   technician: User;
+};
+
+export type MachineHistoryWithDetails = MachineHistory & {
+  machine: Machine;
+  changedByUser: User;
 };

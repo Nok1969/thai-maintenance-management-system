@@ -10,8 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MachineForm from "@/components/forms/machine-form";
-import { Plus, Search, Settings, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import MachineHistory from "@/components/machine-history";
+import { Plus, Search, Settings, AlertTriangle, CheckCircle, Clock, MapPin, History, Eye } from "lucide-react";
 import type { Machine } from "@shared/schema";
 
 export default function Machines() {
@@ -19,8 +22,11 @@ export default function Machines() {
   const { isAuthenticated, isLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
+  const [viewingMachine, setViewingMachine] = useState<Machine | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -84,10 +90,15 @@ export default function Machines() {
   const filteredMachines = machines?.filter((machine: Machine) => {
     const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          machine.machineId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         machine.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         machine.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         machine.type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || machine.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesLocation = locationFilter === "all" || machine.location === locationFilter;
+    return matchesSearch && matchesStatus && matchesLocation;
   }) || [];
+
+  // Get unique locations for filter
+  const uniqueLocations = [...new Set(machines?.map((machine: Machine) => machine.location) || [])];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -116,6 +127,16 @@ export default function Machines() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingMachine(null);
+  };
+
+  const handleView = (machine: Machine) => {
+    setViewingMachine(machine);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleViewDialogClose = () => {
+    setIsViewDialogOpen(false);
+    setViewingMachine(null);
   };
 
   return (
@@ -148,17 +169,35 @@ export default function Machines() {
 
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="ค้นหาเครื่องจักร..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="ค้นหาเครื่องจักร..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select value={locationFilter} onValueChange={setLocationFilter}>
+                    <SelectTrigger className="w-[200px]">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="เลือกตำแหน่ง" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">ทุกตำแหน่ง</SelectItem>
+                      {uniqueLocations.map((location) => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={statusFilter === "all" ? "default" : "outline"}
                   onClick={() => setStatusFilter("all")}
@@ -244,6 +283,15 @@ export default function Machines() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleView(machine)}
+                      className="flex-1"
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      ดู
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEdit(machine)}
                       className="flex-1"
                     >
@@ -284,6 +332,141 @@ export default function Machines() {
             </CardContent>
           </Card>
         )}
+
+        {/* Machine View Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                รายละเอียดเครื่องจักร: {viewingMachine?.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {viewingMachine && (
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="details">รายละเอียด</TabsTrigger>
+                  <TabsTrigger value="history" className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    ประวัติ
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="details" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">ข้อมูลพื้นฐาน</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <div className="text-sm text-gray-500">รหัสเครื่องจักร</div>
+                          <div className="font-medium">{viewingMachine.machineId}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">ชื่อเครื่องจักร</div>
+                          <div className="font-medium">{viewingMachine.name}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">ประเภท</div>
+                          <div className="font-medium">{viewingMachine.type}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">สถานะ</div>
+                          <div>{getStatusBadge(viewingMachine.status)}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">ตำแหน่งที่ตั้ง</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <div className="text-sm text-gray-500">ตำแหน่ง</div>
+                          <div className="font-medium flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-blue-500" />
+                            {viewingMachine.location}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">แผนก</div>
+                          <div className="font-medium">{viewingMachine.department || "-"}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">วันที่ติดตั้ง</div>
+                          <div className="font-medium">{viewingMachine.installationDate || "-"}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="col-span-2">
+                      <CardHeader>
+                        <CardTitle className="text-lg">ข้อมูลผู้ผลิต</CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid grid-cols-3 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-500">ผู้ผลิต</div>
+                          <div className="font-medium">{viewingMachine.manufacturer || "-"}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">รุ่น</div>
+                          <div className="font-medium">{viewingMachine.model || "-"}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-500">หมายเลขเครื่อง</div>
+                          <div className="font-medium">{viewingMachine.serialNumber || "-"}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {(viewingMachine.manualUrl || viewingMachine.imageUrl) && (
+                      <Card className="col-span-2">
+                        <CardHeader>
+                          <CardTitle className="text-lg">เอกสารและรูปภาพ</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {viewingMachine.manualUrl && (
+                            <div>
+                              <div className="text-sm text-gray-500">คู่มือการใช้งาน</div>
+                              <a
+                                href={viewingMachine.manualUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                ดูคู่มือ
+                              </a>
+                            </div>
+                          )}
+                          {viewingMachine.imageUrl && (
+                            <div>
+                              <div className="text-sm text-gray-500">รูปภาพเครื่องจักร</div>
+                              <a
+                                href={viewingMachine.imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                ดูรูปภาพ
+                              </a>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="history">
+                  <MachineHistory machineId={viewingMachine.id} />
+                </TabsContent>
+              </Tabs>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
