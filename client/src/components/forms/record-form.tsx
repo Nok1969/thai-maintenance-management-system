@@ -375,7 +375,7 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
                 setPartsUsedText(e.target.value);
                 form.setValue("partsUsedText", e.target.value);
               }}
-              placeholder="เช่น&#10;น้ำมันหล่อลื่น 1 ลิตร&#10;ไส้กรองอากาศ&#10;สายพาน"
+              placeholder=""
               rows={4}
             />
           </div>
@@ -389,7 +389,7 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
                 setWorkImagesText(e.target.value);
                 form.setValue("workImagesText", e.target.value);
               }}
-              placeholder="เช่น&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+              placeholder=""
               rows={4}
             />
           </div>

@@ -10,12 +10,12 @@ export default function Landing() {
           <div className="flex items-center justify-center mb-6">
             <Cog className="h-16 w-16 text-primary mr-4" />
             <h1 className="text-4xl font-bold text-gray-900">
-              ระบบบำรุงรักษาเครื่องจักรประจำปี
+              ระบบบำรุงรักษาเครื่องจักรประจำปี 2025
             </h1>
           </div>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            จัดการแผนการบำรุงรักษาเครื่องจักรให้เป็นระบบ สร้างฐานข้อมูลประวัติการบำรุงรักษาที่ครบถ้วน 
-            และเพิ่มประสิทธิภาพการทำงานของทีมบำรุงรักษา
+            แผนการบำรุงรักษาเครื่องจักรโรงแรม รีเจ้นท์ ชะอำ บีซ รีสอร์ท 
+            ฐานข้อมูลประวัติการบำรุงรักษา และเพิ่มประสิทธิภาพการทำงานของทีมบำรุงรักษา
           </p>
           <Button 
             size="lg" 
@@ -34,7 +34,7 @@ export default function Landing() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                บันทึกข้อมูลเครื่องจักรครบถ้วน ติดตามสถานะและประวัติการใช้งาน
+                บันทึกข้อมูลเครื่องจักร ติดตามสถานะและประวัติการใช้งาน
               </p>
             </CardContent>
           </Card>
@@ -93,7 +93,7 @@ export default function Landing() {
               <ul className="space-y-2 text-gray-600">
                 <li>• รายการงานที่ได้รับมอบหมาย</li>
                 <li>• คู่มือและขั้นตอนการบำรุงรักษา</li>
-                <li>• บันทึกผลการทำงานแบบง่ายๆ</li>
+                <li>• บันทึกผลการทำงาน PM</li>
                 <li>• ติดตามประวัติการบำรุงรักษา</li>
               </ul>
             </div>

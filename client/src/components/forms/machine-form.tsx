@@ -140,7 +140,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="machineId"
                 {...form.register("machineId")}
-                placeholder="เช่น CNC-001"
+                placeholder=""
                 className={form.formState.errors.machineId ? "border-destructive" : ""}
               />
               {form.formState.errors.machineId && (
@@ -155,7 +155,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="name"
                 {...form.register("name")}
-                placeholder="เช่น เครื่องกลึง CNC"
+                placeholder=""
                 className={form.formState.errors.name ? "border-destructive" : ""}
               />
               {form.formState.errors.name && (
@@ -170,7 +170,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="type"
                 {...form.register("type")}
-                placeholder="เช่น เครื่องกลึง"
+                placeholder=""
                 className={form.formState.errors.type ? "border-destructive" : ""}
               />
               {form.formState.errors.type && (
@@ -185,7 +185,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="manufacturer"
                 {...form.register("manufacturer")}
-                placeholder="เช่น Fanuc"
+                placeholder=""
               />
             </div>
 
@@ -194,7 +194,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="model"
                 {...form.register("model")}
-                placeholder="เช่น 21i"
+                placeholder=""
               />
             </div>
 
@@ -203,7 +203,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="serialNumber"
                 {...form.register("serialNumber")}
-                placeholder="เช่น SN123456"
+                placeholder=""
               />
             </div>
           </CardContent>
@@ -228,7 +228,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="location"
                 {...form.register("location")}
-                placeholder="เช่น ฝ่ายผลิต A"
+                placeholder=""
                 className={form.formState.errors.location ? "border-destructive" : ""}
               />
               {form.formState.errors.location && (
@@ -243,7 +243,7 @@ export default function MachineForm({ machine, onSuccess }: MachineFormProps) {
               <Input
                 id="department"
                 {...form.register("department")}
-                placeholder="เช่น แผนกการผลิต"
+                placeholder=""
               />
             </div>
 

@@ -26,21 +26,25 @@ export default function Dashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   if (isLoading || !isAuthenticated) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+        </div>
       </div>
-    </div>;
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <HeaderNavigation />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">ภาพรวมระบบบำรุงรักษา</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            ภาพรวมระบบบำรุงรักษา
+          </h2>
           <DashboardStats />
         </div>
 
@@ -65,7 +69,8 @@ export default function Dashboard() {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-500">
-            © 2024 ระบบบำรุงรักษาเครื่องจักรประจำปี สงวนสิทธิ์ทุกประการ
+            © 2025 ระบบบำรุงรักษาเครื่องจักรประจำปี โรงแนท รีเจ้นท์
+            สงวนสิทธิ์ทุกประการ
           </div>
         </div>
       </footer>

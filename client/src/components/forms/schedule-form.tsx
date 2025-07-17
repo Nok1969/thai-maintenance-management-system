@@ -346,7 +346,7 @@ export default function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps)
                 setTaskChecklistText(e.target.value);
                 form.setValue("taskChecklistText", e.target.value);
               }}
-              placeholder="เช่น&#10;ตรวจสอบน้ำมันหล่อลื่น&#10;ทำความสะอาดเครื่องจักร&#10;ตรวจสอบสายพาน"
+              placeholder=""
               rows={4}
             />
           </div>
@@ -360,7 +360,7 @@ export default function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps)
                 setRequiredPartsText(e.target.value);
                 form.setValue("requiredPartsText", e.target.value);
               }}
-              placeholder="เช่น&#10;น้ำมันหล่อลื่น 1 ลิตร&#10;ไส้กรองอากาศ&#10;สายพาน"
+              placeholder=""
               rows={4}
             />
           </div>
@@ -374,7 +374,7 @@ export default function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps)
                 setRequiredToolsText(e.target.value);
                 form.setValue("requiredToolsText", e.target.value);
               }}
-              placeholder="เช่น&#10;ประแจ 10mm&#10;ไขควง&#10;เครื่องวัดความดัน"
+              placeholder=""
               rows={4}
             />
           </div>
