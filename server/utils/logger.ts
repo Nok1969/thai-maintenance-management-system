@@ -131,3 +131,18 @@ export function logPerformance(operation: string, startTime: number) {
     logDebug(`${operation} completed in ${duration}ms`);
   }
 }
+
+// Authentication-specific error logging
+export function logAuthError(operation: string, error: any, context?: any) {
+  const timestamp = new Date().toLocaleString('th-TH');
+  console.error(`${timestamp} [AUTH-ERROR] ${operation} failed`);
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Auth error details:', error);
+    if (context) {
+      console.error('Context:', context);
+    }
+  } else {
+    console.error('Error type:', error?.constructor?.name || 'Unknown');
+  }
+}

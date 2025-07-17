@@ -111,7 +111,13 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  let config;
+  try {
+    config = await getOidcConfig();
+  } catch (error) {
+    console.error("OIDC discovery failed:", error);
+    throw new Error("Failed to configure OIDC. Authentication will not work.");
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -164,10 +170,20 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", async (req, res) => {
     const replId = process.env.REPL_ID || "dev-fallback-id";
-    const redirectUrl = client.buildEndSessionUrl(config, {
-      client_id: replId,
-      post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-    }).href;
+    
+    let logoutUrl;
+    try {
+      // Get fresh config for logout (use cached version)
+      const logoutConfig = await getOidcConfig();
+      logoutUrl = client.buildEndSessionUrl(logoutConfig, {
+        client_id: replId,
+        post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+      }).href;
+    } catch (configError) {
+      console.error("OIDC config failed during logout:", configError);
+      // Fallback: simple redirect to home without OIDC logout
+      logoutUrl = `${req.protocol}://${req.hostname}`;
+    }
 
     // Handle different Express versions and logout methods
     try {
@@ -175,12 +191,12 @@ export async function setupAuth(app: Express) {
         // Express 5+ style with callback
         if (req.logout.length > 0) {
           req.logout(() => {
-            res.redirect(redirectUrl);
+            res.redirect(logoutUrl);
           });
         } else {
           // Express 4 style synchronous
           req.logout();
-          res.redirect(redirectUrl);
+          res.redirect(logoutUrl);
         }
       } else if (req.session) {
         // Fallback: destroy session manually
@@ -188,16 +204,16 @@ export async function setupAuth(app: Express) {
           if (err) {
             console.error("Session destroy error:", err);
           }
-          res.redirect(redirectUrl);
+          res.redirect(logoutUrl);
         });
       } else {
         // Last resort: just redirect
-        res.redirect(redirectUrl);
+        res.redirect(logoutUrl);
       }
     } catch (error) {
       console.error("Logout error:", error);
       // Even if logout fails, redirect to complete the process
-      res.redirect(redirectUrl);
+      res.redirect(logoutUrl);
     }
   });
 }
@@ -221,7 +237,14 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   try {
-    const config = await getOidcConfig();
+    let config;
+    try {
+      config = await getOidcConfig();
+    } catch (configError) {
+      console.error("OIDC config failed during token refresh:", configError);
+      return res.status(500).json({ message: "Authentication service unavailable" });
+    }
+    
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     
     // Only update session tokens, do NOT upsert user data
@@ -230,6 +253,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     
     return next();
   } catch (error) {
+    console.error("Token refresh failed:", error);
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
