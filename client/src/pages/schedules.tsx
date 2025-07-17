@@ -37,7 +37,8 @@ export default function Schedules() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: schedules, isLoading: schedulesLoading } = useQuery({
-    queryKey: ["/api/schedules"],
+    queryKey: ["/api/schedules", { page: "1", limit: "10" }],
+    queryFn: () => apiRequest("GET", "/api/schedules?page=1&limit=10"),
     retry: false,
   });
 

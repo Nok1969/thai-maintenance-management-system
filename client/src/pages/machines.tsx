@@ -43,7 +43,8 @@ export default function Machines() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: machines, isLoading: machinesLoading } = useQuery({
-    queryKey: ["/api/machines"],
+    queryKey: ["/api/machines", { page: "1", limit: "10" }],
+    queryFn: () => apiRequest("GET", "/api/machines?page=1&limit=10"),
     retry: false,
   });
 

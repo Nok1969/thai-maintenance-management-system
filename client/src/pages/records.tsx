@@ -37,7 +37,8 @@ export default function Records() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: records, isLoading: recordsLoading } = useQuery({
-    queryKey: ["/api/records"],
+    queryKey: ["/api/records", { page: "1", limit: "10" }],
+    queryFn: () => apiRequest("GET", "/api/records?page=1&limit=10"),
     retry: false,
   });
 
