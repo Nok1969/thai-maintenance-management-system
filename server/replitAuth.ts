@@ -8,15 +8,35 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// Get domains with safe fallback for development
+const getDomains = () => {
+  if (process.env.REPLIT_DOMAINS) {
+    return process.env.REPLIT_DOMAINS.split(",");
+  }
+  
+  // Fallback for development
+  if (process.env.NODE_ENV === 'development') {
+    return ["localhost:5000"];
+  }
+  
+  throw new Error("REPLIT_DOMAINS must be set in production");
+};
 
 const getOidcConfig = memoize(
   async () => {
+    const issuerUrl = process.env.ISSUER_URL ?? "https://replit.com/oidc";
+    const replId = process.env.REPL_ID;
+    
+    if (!replId && process.env.NODE_ENV !== 'development') {
+      throw new Error("REPL_ID must be set in production");
+    }
+    
+    // Use a fallback ID for development
+    const clientId = replId || "dev-fallback-id";
+    
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      new URL(issuerUrl),
+      clientId
     );
   },
   { maxAge: 3600 * 1000 }
@@ -24,15 +44,34 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  
+  // Get session secret with fallback
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error("SESSION_SECRET must be set in production");
+    }
+    console.warn("Warning: Using fallback SESSION_SECRET for development");
+  }
+  
+  const secret = sessionSecret || "dev-session-secret-change-in-production";
+  
+  // Database URL is already checked in db.ts, but add fallback handling
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+  }
+  
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    conString: dbUrl,
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -84,8 +123,8 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  const domains = getDomains();
+  for (const domain of domains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -102,8 +141,8 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    // Use the first (and typically only) domain from REPLIT_DOMAINS
-    const domain = process.env.REPLIT_DOMAINS!.split(",")[0];
+    const domains = getDomains();
+    const domain = domains[0]; // Use the first domain
     passport.authenticate(`replitauth:${domain}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -111,8 +150,8 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    // Use the first (and typically only) domain from REPLIT_DOMAINS
-    const domain = process.env.REPLIT_DOMAINS!.split(",")[0];
+    const domains = getDomains();
+    const domain = domains[0]; // Use the first domain
     passport.authenticate(`replitauth:${domain}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
@@ -121,9 +160,10 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
+      const replId = process.env.REPL_ID || "dev-fallback-id";
       res.redirect(
         client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
+          client_id: replId,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
         }).href
       );
