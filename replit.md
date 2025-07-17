@@ -4,25 +4,24 @@
 
 This is a full-stack maintenance management system built for industrial machinery tracking and maintenance scheduling. The application provides a comprehensive solution for managing machines, scheduling maintenance tasks, recording maintenance activities, and generating reports. It's designed with a modern tech stack using React, Express, and PostgreSQL with Thai language support for the user interface.
 
-## Recent Changes (July 16, 2025)
+## Recent Changes (July 17, 2025)
 
-✓ **Complete Documentation Suite Created**:
-- User manual with detailed step-by-step instructions
-- Workflow guide with role-based processes  
-- Technical documentation for developers
-- Main README with project overview
+✓ **Logging System Modularized**:
+- Created centralized logger utility (`server/utils/logger.ts`)
+- Extracted API request/response logging into reusable functions
+- Added configurable log levels (Error, Info, Warning, Debug)
+- Improved maintainability and scalability of logging system
 
-✓ **Authentication System Fixed**:
-- Resolved Replit Auth domain mapping issues
-- Fixed session cookie security settings for development
-- Login system now working properly with 302 redirects
-- Session management functioning correctly
+✓ **CORS Security Implementation**:
+- Added CORS middleware with environment-based configuration
+- Development: Allow all origins for flexibility
+- Production: Restrict to Replit domains for security
+- Enabled credentials and configured proper headers
 
-✓ **Machine History System Implemented**:
-- Automatic change tracking for machine updates
-- Machine details dialog with tabbed interface
-- Location-based filtering functionality
-- Complete audit trail for all machine changes
+✓ **Server Architecture Improvements**:
+- Fixed HTTP server creation consistency
+- Improved error handling with structured logging
+- Enhanced middleware organization and order
 
 ## User Preferences
 

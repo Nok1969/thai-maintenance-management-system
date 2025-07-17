@@ -1,9 +1,21 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createLoggingMiddleware, logError, logInfo } from "./utils/logger";
 
 const app = express();
+
+// CORS configuration for cross-origin requests
+app.use(cors({
+  origin: process.env.NODE_ENV === 'development' 
+    ? true // Allow all origins in development
+    : ['https://*.replit.app', 'https://*.replit.co'], // Restrict in production
+  credentials: true, // Allow cookies and auth headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
