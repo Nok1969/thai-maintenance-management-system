@@ -1,9 +1,8 @@
-node_modules
-dist
-.DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Environment variables
 .env
@@ -12,28 +11,49 @@ vite.config.ts.*
 .env.test.local
 .env.production.local
 
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
 # Logs
-logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
 
-# nyc test coverage
-.nyc_output
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -44,14 +64,143 @@ coverage
 # Yarn Integrity file
 .yarn-integrity
 
-# Editor directories and files
-.idea
-.vscode
+# dotenv environment variable files
+.env
+.env.development
+.env.test
+.env.production
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Replit specific
+.replit
+replit.nix
+.config/
+.git/
+
+# IDE files
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
 
 # OS generated files
-Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
-Desktop.ini
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Drizzle
+drizzle/
+.drizzle/
+
+# Local development
+.local/
+local/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Documentation build
+docs/build/
+docs/.vitepress/dist/
+
+# Package lock files (choose one)
+package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Deployment
+.vercel/
+.netlify/
+.firebase/
+
+# Local database files
+*.db-journal
+*.sqlite-journal
+
+# TypeScript incremental compilation
+tsconfig.tsbuildinfo
+
+# Storybook
+storybook-static/
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettierCache
+
+# Stylelint cache
+.stylelintcache
+
+# Turborepo
+.turbo/
+
+# Local env files
+.env*.local
+
+# Lock files
+*.lock
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+.pnpm/
