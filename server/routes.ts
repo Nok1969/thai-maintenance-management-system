@@ -155,6 +155,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const { id } = req.params;
+        
+        // Check if machine exists before updating
+        const existingMachine = await storage.getMachine(id);
+        if (!existingMachine) {
+          return res.status(404).json({ message: "Machine not found" });
+        }
+        
         const machineData = req.body;
         const userId = req.user.claims.sub;
         const machine = await storage.updateMachine(id, machineData, userId);
@@ -172,6 +179,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        
+        // Check if machine exists before deleting
+        const existingMachine = await storage.getMachine(id);
+        if (!existingMachine) {
+          return res.status(404).json({ message: "Machine not found" });
+        }
+        
         await storage.deleteMachine(id);
         res.status(204).send();
       } catch (error) {
@@ -252,6 +266,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        
+        // Check if schedule exists before updating
+        const existingSchedule = await storage.getMaintenanceSchedule(id);
+        if (!existingSchedule) {
+          return res.status(404).json({ message: "Schedule not found" });
+        }
+        
         const scheduleData = req.body;
         const schedule = await storage.updateMaintenanceSchedule(id, scheduleData);
         res.json(schedule);
@@ -268,6 +289,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        
+        // Check if schedule exists before deleting
+        const existingSchedule = await storage.getMaintenanceSchedule(id);
+        if (!existingSchedule) {
+          return res.status(404).json({ message: "Schedule not found" });
+        }
+        
         await storage.deleteMaintenanceSchedule(id);
         res.status(204).send();
       } catch (error) {
@@ -332,6 +360,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        
+        // Check if record exists before updating
+        const existingRecord = await storage.getMaintenanceRecord(id);
+        if (!existingRecord) {
+          return res.status(404).json({ message: "Record not found" });
+        }
+        
         const recordData = req.body;
         const record = await storage.updateMaintenanceRecord(id, recordData);
         res.json(record);
@@ -348,6 +383,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        
+        // Check if record exists before deleting
+        const existingRecord = await storage.getMaintenanceRecord(id);
+        if (!existingRecord) {
+          return res.status(404).json({ message: "Record not found" });
+        }
+        
         await storage.deleteMaintenanceRecord(id);
         res.status(204).send();
       } catch (error) {
