@@ -36,6 +36,13 @@ This is a full-stack maintenance management system built for industrial machiner
 - Created environment configuration guide and example files
 - Input sanitization and error handling for production safety
 
+✓ **Input Validation Security Enhancement**:
+- Replaced all unsafe parseInt() calls with Number() + isNaN() validation
+- Created centralized validation utilities (server/utils/validation.ts)
+- Added comprehensive parameter validation for all API routes
+- Enhanced frontend form validation with safe numeric parsing
+- Added specialized validators for dates, ports, and query parameters
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

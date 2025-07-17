@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { parsePositiveInteger, parseOptionalNumber, validateDateRange } from "./utils/validation";
 import { z } from "zod";
 import {
   insertMachineSchema,
@@ -48,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/upcoming-maintenance", isAuthenticated, async (req, res) => {
     try {
-      const days = req.query.days ? parseInt(req.query.days as string) : 30;
+      const days = parseOptionalNumber(req.query.days as string, 30, 1, 365);
       const upcomingMaintenance = await storage.getUpcomingMaintenanceSchedules(days);
       res.json(upcomingMaintenance);
     } catch (error) {
@@ -59,11 +60,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/calendar/:year/:month", isAuthenticated, async (req, res) => {
     try {
-      const year = parseInt(req.params.year);
-      const month = parseInt(req.params.month);
+      const { year, month } = validateDateRange(req.params.year, req.params.month);
       const calendarData = await storage.getMaintenanceCalendarData(year, month);
       res.json(calendarData);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({ message: error.message });
+      }
       console.error("Error fetching calendar data:", error);
       res.status(500).json({ message: "Failed to fetch calendar data" });
     }
@@ -82,7 +85,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/machines/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid machine ID" });
+      }
+      
       const machine = await storage.getMachine(id);
       if (!machine) {
         return res.status(404).json({ message: "Machine not found" });
@@ -122,7 +129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid user session" });
       }
       
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid machine ID" });
+      }
+      
       const machineData = insertMachineSchema.partial().parse(req.body);
       const userId = req.user.claims.sub;
       const machine = await storage.updateMachine(id, machineData, userId);
@@ -138,7 +149,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/machines/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid machine ID" });
+      }
+      
       await storage.deleteMachine(id);
       res.status(204).send();
     } catch (error) {
@@ -150,7 +165,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Machine history routes
   app.get("/api/machines/:id/history", isAuthenticated, async (req, res) => {
     try {
-      const machineId = parseInt(req.params.id);
+      const machineId = Number(req.params.id);
+      if (isNaN(machineId)) {
+        return res.status(400).json({ message: "Invalid machine ID" });
+      }
+      
       const history = await storage.getMachineHistory(machineId);
       res.json(history);
     } catch (error) {
@@ -172,7 +191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/schedules/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      
       const schedule = await storage.getMaintenanceSchedule(id);
       if (!schedule) {
         return res.status(404).json({ message: "Schedule not found" });
@@ -200,7 +223,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/schedules/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      
       const scheduleData = insertMaintenanceScheduleSchema.partial().parse(req.body);
       const schedule = await storage.updateMaintenanceSchedule(id, scheduleData);
       res.json(schedule);
@@ -215,7 +242,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/schedules/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      
       await storage.deleteMaintenanceSchedule(id);
       res.status(204).send();
     } catch (error) {
@@ -237,7 +268,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/records/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+      
       const record = await storage.getMaintenanceRecord(id);
       if (!record) {
         return res.status(404).json({ message: "Record not found" });
@@ -265,7 +300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/records/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+      
       const recordData = insertMaintenanceRecordSchema.partial().parse(req.body);
       const record = await storage.updateMaintenanceRecord(id, recordData);
       res.json(record);
@@ -280,7 +319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/records/:id", isAuthenticated, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid record ID" });
+      }
+      
       await storage.deleteMaintenanceRecord(id);
       res.status(204).send();
     } catch (error) {

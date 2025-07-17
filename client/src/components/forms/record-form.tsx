@@ -204,7 +204,12 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
               <Label htmlFor="machineId">เครื่องจักร *</Label>
               <Select
                 value={form.watch("machineId")?.toString()}
-                onValueChange={(value) => form.setValue("machineId", parseInt(value))}
+                onValueChange={(value) => {
+                  const numValue = Number(value);
+                  if (!isNaN(numValue)) {
+                    form.setValue("machineId", numValue);
+                  }
+                }}
               >
                 <SelectTrigger className={form.formState.errors.machineId ? "border-destructive" : ""}>
                   <SelectValue placeholder="เลือกเครื่องจักร" />
@@ -228,7 +233,14 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
               <Label htmlFor="scheduleId">แผนการบำรุงรักษา (ถ้ามี)</Label>
               <Select
                 value={form.watch("scheduleId")?.toString() || ""}
-                onValueChange={(value) => form.setValue("scheduleId", value ? parseInt(value) : undefined)}
+                onValueChange={(value) => {
+                  if (value) {
+                    const numValue = Number(value);
+                    form.setValue("scheduleId", !isNaN(numValue) ? numValue : undefined);
+                  } else {
+                    form.setValue("scheduleId", undefined);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกแผนการบำรุงรักษา (ถ้ามี)" />

@@ -199,7 +199,12 @@ export default function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps)
               <Label htmlFor="machineId">เครื่องจักร *</Label>
               <Select
                 value={form.watch("machineId")?.toString()}
-                onValueChange={(value) => form.setValue("machineId", parseInt(value))}
+                onValueChange={(value) => {
+                  const numValue = Number(value);
+                  if (!isNaN(numValue)) {
+                    form.setValue("machineId", numValue);
+                  }
+                }}
               >
                 <SelectTrigger className={form.formState.errors.machineId ? "border-destructive" : ""}>
                   <SelectValue placeholder="เลือกเครื่องจักร" />
