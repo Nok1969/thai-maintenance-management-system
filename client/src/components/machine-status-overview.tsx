@@ -12,16 +12,16 @@ export default function MachineStatusOverview() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [, setLocation] = useLocation();
 
-  const { data: machines, isLoading } = useQuery({
+  const { data: machines = [], isLoading } = useQuery({
     queryKey: ["/api/machines", { page: "1", limit: "20" }],
     queryFn: () => apiRequest("GET", "/api/machines?page=1&limit=20"),
     retry: false,
   });
 
-  const filteredMachines = machines?.filter((machine: Machine) => {
+  const filteredMachines = (Array.isArray(machines) ? machines : []).filter((machine: Machine) => {
     if (statusFilter === "all") return true;
     return machine.status === statusFilter;
-  }) || [];
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
