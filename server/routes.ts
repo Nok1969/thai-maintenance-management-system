@@ -21,20 +21,17 @@ import {
   insertMaintenanceScheduleSchema,
   insertMaintenanceRecordSchema,
 } from "@shared/schema";
+import type { AuthenticatedRequest, OptionalAuthRequest } from "@shared/types";
+import { getUserId, isAuthenticatedRequest } from "@shared/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
-      // Additional safety check for user claims
-      if (!req.user || !req.user.claims || !req.user.claims.sub) {
-        return res.status(401).json({ message: "Invalid user session" });
-      }
-      
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -49,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/stats", isAuthenticated, dosProtection, async (req, res) => {
+  app.get("/api/dashboard/stats", isAuthenticated, dosProtection, async (req: AuthenticatedRequest, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -62,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/upcoming-maintenance", 
     isAuthenticated, 
     validateQuery(dashboardQuerySchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { days } = req.query;
         const upcomingMaintenance = await storage.getUpcomingMaintenanceSchedules(days);
@@ -77,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/calendar/:year/:month", 
     isAuthenticated,
     validateParams(dateParamSchema),
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { year, month } = req.params;
         const calendarData = await storage.getMaintenanceCalendarData(year, month);
@@ -93,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/machines", 
     isAuthenticated, 
     validateQuery(machineFilterQuerySchema.merge(paginationQuerySchema)), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const machines = await storage.getMachines();
         res.json(machines);
@@ -107,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/machines/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         const machine = await storage.getMachine(id);
@@ -125,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/machines", 
     isAuthenticated, 
     validateBody(insertMachineSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const machineData = req.body;
         
@@ -148,13 +145,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated, 
     validateParams(idParamSchema),
     validateBody(insertMachineSchema.partial()),
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
-        // Additional safety check for user claims
-        if (!req.user || !req.user.claims || !req.user.claims.sub) {
-          return res.status(401).json({ message: "Invalid user session" });
-        }
-        
         const { id } = req.params;
         
         // Check if machine exists before updating
@@ -164,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const machineData = req.body;
-        const userId = req.user.claims.sub;
+        const userId = getUserId(req);
         const machine = await storage.updateMachine(id, machineData, userId);
         res.json(machine);
       } catch (error) {
@@ -177,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/machines/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         
@@ -200,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/machines/:id/history", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         const history = await storage.getMachineHistory(id);
@@ -216,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules", 
     isAuthenticated, 
     validateQuery(dateFilterQuerySchema.merge(paginationQuerySchema)), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const schedules = await storage.getMaintenanceSchedules();
         res.json(schedules);
@@ -230,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         const schedule = await storage.getMaintenanceSchedule(id);
@@ -248,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/schedules", 
     isAuthenticated, 
     validateBody(insertMaintenanceScheduleSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const scheduleData = req.body;
         const schedule = await storage.createMaintenanceSchedule(scheduleData);
@@ -264,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated, 
     validateParams(idParamSchema),
     validateBody(insertMaintenanceScheduleSchema.partial()),
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         
@@ -287,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/schedules/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         
@@ -310,7 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/records", 
     isAuthenticated, 
     validateQuery(dateFilterQuerySchema.merge(paginationQuerySchema)), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const records = await storage.getMaintenanceRecords();
         res.json(records);
@@ -324,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/records/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         const record = await storage.getMaintenanceRecord(id);
@@ -342,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/records", 
     isAuthenticated, 
     validateBody(insertMaintenanceRecordSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const recordData = req.body;
         const record = await storage.createMaintenanceRecord(recordData);
@@ -358,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated, 
     validateParams(idParamSchema),
     validateBody(insertMaintenanceRecordSchema.partial()),
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         
@@ -381,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/records/:id", 
     isAuthenticated, 
     validateParams(idParamSchema), 
-    async (req: any, res) => {
+    async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
         
