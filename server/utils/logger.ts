@@ -96,7 +96,12 @@ export function logError(message: string, error?: any) {
   const timestamp = new Date().toLocaleString('th-TH');
   console.error(`${timestamp} [ERROR] ${message}`);
   if (error) {
-    console.error('Error details:', error);
+    // Only log error details in development to avoid leaking sensitive info
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error details:', error);
+    } else {
+      console.error('Error type:', error?.constructor?.name || 'Unknown');
+    }
   }
 }
 

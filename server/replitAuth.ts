@@ -158,16 +158,43 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      const replId = process.env.REPL_ID || "dev-fallback-id";
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: replId,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
-    });
+  app.get("/api/logout", async (req, res) => {
+    const replId = process.env.REPL_ID || "dev-fallback-id";
+    const redirectUrl = client.buildEndSessionUrl(config, {
+      client_id: replId,
+      post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+    }).href;
+
+    // Handle different Express versions and logout methods
+    try {
+      if (typeof req.logout === "function") {
+        // Express 5+ style with callback
+        if (req.logout.length > 0) {
+          req.logout(() => {
+            res.redirect(redirectUrl);
+          });
+        } else {
+          // Express 4 style synchronous
+          req.logout();
+          res.redirect(redirectUrl);
+        }
+      } else if (req.session) {
+        // Fallback: destroy session manually
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Session destroy error:", err);
+          }
+          res.redirect(redirectUrl);
+        });
+      } else {
+        // Last resort: just redirect
+        res.redirect(redirectUrl);
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if logout fails, redirect to complete the process
+      res.redirect(redirectUrl);
+    }
   });
 }
 
