@@ -136,21 +136,27 @@ app.use(createLoggingMiddleware({
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
-    // Add error handling for server startup
-    server.on('error', (error: any) => {
-      console.error('Server error:', error);
-      if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is already in use`);
-        if (process.env.NODE_ENV === 'production') {
-          process.exit(1);
-        }
+    // Set up error handling BEFORE attempting to listen
+    server.on('error', (err: any) => {
+      console.error("❌ Server error:", err);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${port} is already in use.`);
+      } else if (err.code === 'EACCES') {
+        console.error(`❌ Permission denied on port ${port}.`);
+      } else if (err.code === 'ENOTFOUND') {
+        console.error(`❌ Host not found.`);
       }
+      process.exit(1);
     });
 
-    server.listen(port, '0.0.0.0', () => {
-      console.log(`serving on port ${port}`);
-      console.log(`Server ready at http://0.0.0.0:${port}`);
+    // Set up listening event handler
+    server.on('listening', () => {
+      console.log(`✅ Server is running on port ${port}`);
+      console.log(`✅ Server ready at http://0.0.0.0:${port}`);
     });
+
+    // Start listening
+    server.listen(port, '0.0.0.0');
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
