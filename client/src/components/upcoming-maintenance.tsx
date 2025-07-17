@@ -10,7 +10,7 @@ import type { MaintenanceScheduleWithMachine } from "@shared/schema";
 export default function UpcomingMaintenance() {
   const [, setLocation] = useLocation();
   
-  const { data: upcomingMaintenance, isLoading } = useQuery({
+  const { data: upcomingMaintenance = [], isLoading } = useQuery({
     queryKey: ["/api/dashboard/upcoming-maintenance", { days: "7" }],
     queryFn: () => apiRequest("GET", "/api/dashboard/upcoming-maintenance?days=7"),
     retry: false,
@@ -116,7 +116,7 @@ export default function UpcomingMaintenance() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {upcomingMaintenance?.slice(0, 5).map((schedule: MaintenanceScheduleWithMachine) => (
+                  {(Array.isArray(upcomingMaintenance) ? upcomingMaintenance.slice(0, 5) : []).map((schedule: MaintenanceScheduleWithMachine) => (
                     <tr key={schedule.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
