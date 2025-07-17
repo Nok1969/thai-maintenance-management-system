@@ -13,13 +13,19 @@ import {
   idParamSchema,
   paginationQuerySchema,
   dateFilterQuerySchema,
-  machineFilterQuerySchema
+  machineFilterQuerySchema,
+  updateMachineSchema,
+  updateMaintenanceScheduleSchema,
+  updateMaintenanceRecordSchema
 } from "./utils/queryValidation";
 import { z } from "zod";
 import {
   insertMachineSchema,
   insertMaintenanceScheduleSchema,
   insertMaintenanceRecordSchema,
+  type UpdateMachine,
+  type UpdateMaintenanceSchedule,
+  type UpdateMaintenanceRecord,
 } from "@shared/schema";
 import type { AuthenticatedRequest, OptionalAuthRequest } from "@shared/types";
 import { getUserId, isAuthenticatedRequest } from "@shared/types";
@@ -155,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/machines/:id", 
     isAuthenticated, 
     validateParams(idParamSchema),
-    validateBody(insertMachineSchema.partial()),
+    validateBody(updateMachineSchema),
     async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
@@ -266,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/schedules/:id", 
     isAuthenticated, 
     validateParams(idParamSchema),
-    validateBody(insertMaintenanceScheduleSchema.partial()),
+    validateBody(updateMaintenanceScheduleSchema),
     async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;
@@ -360,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/records/:id", 
     isAuthenticated, 
     validateParams(idParamSchema),
-    validateBody(insertMaintenanceRecordSchema.partial()),
+    validateBody(updateMaintenanceRecordSchema),
     async (req: AuthenticatedRequest, res) => {
       try {
         const { id } = req.params;

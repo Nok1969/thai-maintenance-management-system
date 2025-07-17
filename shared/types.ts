@@ -22,13 +22,13 @@ export interface UserSession {
 // Express Request with authenticated user
 export interface AuthenticatedRequest extends Request {
   user: UserSession;
-  isAuthenticated(): boolean;
+  isAuthenticated(): this is AuthenticatedRequest;
 }
 
 // Optional version for routes that may or may not be authenticated
 export interface OptionalAuthRequest extends Request {
   user?: UserSession;
-  isAuthenticated(): boolean;
+  isAuthenticated(): this is AuthenticatedRequest;
 }
 
 // Type guard to check if request is authenticated

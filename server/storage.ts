@@ -8,10 +8,13 @@ import {
   type UpsertUser,
   type Machine,
   type InsertMachine,
+  type UpdateMachine,
   type MaintenanceSchedule,
   type InsertMaintenanceSchedule,
+  type UpdateMaintenanceSchedule,
   type MaintenanceRecord,
   type InsertMaintenanceRecord,
+  type UpdateMaintenanceRecord,
   type MachineHistory,
   type InsertMachineHistory,
   type MachineWithSchedules,
@@ -33,7 +36,7 @@ export interface IStorage {
   getMachine(id: number): Promise<MachineWithSchedules | undefined>;
   getMachineByMachineId(machineId: string): Promise<Machine | undefined>;
   createMachine(machine: InsertMachine): Promise<Machine>;
-  updateMachine(id: number, machine: Partial<InsertMachine>): Promise<Machine>;
+  updateMachine(id: number, machine: UpdateMachine, changedBy?: string): Promise<Machine>;
   deleteMachine(id: number): Promise<void>;
 
   // Maintenance schedule operations
@@ -42,7 +45,7 @@ export interface IStorage {
   getUpcomingMaintenanceSchedules(days?: number): Promise<MaintenanceScheduleWithMachine[]>;
   getOverdueMaintenanceSchedules(): Promise<MaintenanceScheduleWithMachine[]>;
   createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule>;
-  updateMaintenanceSchedule(id: number, schedule: Partial<InsertMaintenanceSchedule>): Promise<MaintenanceSchedule>;
+  updateMaintenanceSchedule(id: number, schedule: UpdateMaintenanceSchedule): Promise<MaintenanceSchedule>;
   deleteMaintenanceSchedule(id: number): Promise<void>;
 
   // Maintenance record operations
@@ -51,7 +54,7 @@ export interface IStorage {
   getMaintenanceRecordsByMachine(machineId: number): Promise<MaintenanceRecordWithDetails[]>;
   getMaintenanceRecordsByTechnician(technicianId: string): Promise<MaintenanceRecordWithDetails[]>;
   createMaintenanceRecord(record: InsertMaintenanceRecord): Promise<MaintenanceRecord>;
-  updateMaintenanceRecord(id: number, record: Partial<InsertMaintenanceRecord>): Promise<MaintenanceRecord>;
+  updateMaintenanceRecord(id: number, record: UpdateMaintenanceRecord): Promise<MaintenanceRecord>;
   deleteMaintenanceRecord(id: number): Promise<void>;
 
   // Dashboard statistics
@@ -137,11 +140,11 @@ export class DatabaseStorage implements IStorage {
     }, 'Machine creation');
   }
 
-  async updateMachine(id: number, machine: Partial<InsertMachine>, changedBy?: string): Promise<Machine> {
+  async updateMachine(id: number, machine: UpdateMachine, changedBy?: string): Promise<Machine> {
     // Get the old machine data for history tracking
     const oldMachine = await this.getMachine(id);
     
-    const [updatedMachine] = await withDatabaseErrorHandling(async () => {
+    const updatedMachine = await withDatabaseErrorHandling(async () => {
       const result = await db
         .update(machines)
         .set({ ...machine, updatedAt: new Date() })
@@ -157,11 +160,11 @@ export class DatabaseStorage implements IStorage {
       // Track changes for important fields
       const fieldsToTrack = ['location', 'status', 'name', 'type', 'department'];
       fieldsToTrack.forEach(field => {
-        if (machine[field as keyof InsertMachine] !== undefined && 
-            oldMachine[field as keyof Machine] !== machine[field as keyof InsertMachine]) {
+        if (machine[field as keyof UpdateMachine] !== undefined && 
+            oldMachine[field as keyof Machine] !== machine[field as keyof UpdateMachine]) {
           changes[field] = {
             old: oldMachine[field as keyof Machine],
-            new: machine[field as keyof InsertMachine]
+            new: machine[field as keyof UpdateMachine]
           };
         }
       });
@@ -329,7 +332,7 @@ export class DatabaseStorage implements IStorage {
     }, 'Maintenance schedule creation');
   }
 
-  async updateMaintenanceSchedule(id: number, schedule: Partial<InsertMaintenanceSchedule>): Promise<MaintenanceSchedule> {
+  async updateMaintenanceSchedule(id: number, schedule: UpdateMaintenanceSchedule): Promise<MaintenanceSchedule> {
     return withDatabaseErrorHandling(async () => {
       const [updatedSchedule] = await db
         .update(maintenanceSchedules)
@@ -487,7 +490,7 @@ export class DatabaseStorage implements IStorage {
     }, 'Maintenance record creation');
   }
 
-  async updateMaintenanceRecord(id: number, record: Partial<InsertMaintenanceRecord>): Promise<MaintenanceRecord> {
+  async updateMaintenanceRecord(id: number, record: UpdateMaintenanceRecord): Promise<MaintenanceRecord> {
     return withDatabaseErrorHandling(async () => {
       const [updatedRecord] = await db
         .update(maintenanceRecords)

@@ -203,7 +203,7 @@ export async function setupAuth(app: Express) {
           });
         } else {
           // Express 4 style synchronous
-          req.logout();
+          req.logout(() => {});
           res.redirect(logoutUrl);
         }
       } else if (req.session) {

@@ -184,12 +184,24 @@ export type User = typeof users.$inferSelect;
 
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Machine = typeof machines.$inferSelect;
+export type UpdateMachine = Partial<Pick<InsertMachine, 
+  'name' | 'type' | 'location' | 'department' | 'status' | 'specifications' | 
+  'installationDate' | 'warrantyExpiry' | 'notes'
+>>; // Exclude machineId from updates for safety
 
 export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
 export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
+export type UpdateMaintenanceSchedule = Partial<Pick<InsertMaintenanceSchedule,
+  'type' | 'intervalDays' | 'startDate' | 'nextMaintenanceDate' | 'priority' | 
+  'taskChecklist' | 'requiredParts' | 'requiredTools' | 'estimatedDuration' | 'isActive'
+>>; // Exclude scheduleId and machineId from updates for safety
 
 export type InsertMaintenanceRecord = z.infer<typeof insertMaintenanceRecordSchema>;
 export type MaintenanceRecord = typeof maintenanceRecords.$inferSelect;
+export type UpdateMaintenanceRecord = Partial<Pick<InsertMaintenanceRecord,
+  'maintenanceDate' | 'type' | 'workDescription' | 'partsUsed' | 'cost' | 
+  'duration' | 'status' | 'notes' | 'workImages' | 'completedAt'
+>>; // Exclude recordId, machineId, scheduleId, technicianId from updates for safety
 
 export type InsertMachineHistory = z.infer<typeof insertMachineHistorySchema>;
 export type MachineHistory = typeof machineHistory.$inferSelect;

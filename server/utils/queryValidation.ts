@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { insertMachineSchema, insertMaintenanceScheduleSchema, insertMaintenanceRecordSchema } from "@shared/schema";
 import type { Request, Response } from "express";
 
 // Query parameter validation schemas
@@ -47,6 +48,23 @@ export const machineFilterQuerySchema = z.object({
     .min(1, "Type cannot be empty")
     .optional()
 });
+
+// Update schemas - derived from insert schemas but with excluded fields
+export const updateMachineSchema = insertMachineSchema.omit({
+  machineId: true, // Exclude immutable machineId from updates
+}).partial();
+
+export const updateMaintenanceScheduleSchema = insertMaintenanceScheduleSchema.omit({
+  scheduleId: true, // Exclude immutable scheduleId from updates
+  machineId: true,  // Exclude immutable machineId from updates
+}).partial();
+
+export const updateMaintenanceRecordSchema = insertMaintenanceRecordSchema.omit({
+  recordId: true,     // Exclude immutable recordId from updates
+  machineId: true,    // Exclude immutable machineId from updates
+  scheduleId: true,   // Exclude immutable scheduleId from updates
+  technicianId: true, // Exclude immutable technicianId from updates
+}).partial();
 
 // Generic query validation middleware
 export function validateQuery<T extends z.ZodTypeAny>(schema: T) {

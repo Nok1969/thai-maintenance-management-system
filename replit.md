@@ -84,6 +84,13 @@ This is a full-stack maintenance management system built for industrial machiner
 - Added proper constraint violation handling (unique, foreign key, not null)
 - Enhanced error logging with development vs production modes
 
+✓ **Create/Update Interface Separation**:
+- Created dedicated UpdateMachine, UpdateMaintenanceSchedule, UpdateMaintenanceRecord types
+- Excluded immutable fields (IDs, foreign keys) from update operations for security
+- Updated storage interfaces to use specific update types instead of generic Partial<Insert>
+- Created corresponding Zod validation schemas for type-safe updates
+- Enhanced API routes with specific update validation schemas
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
