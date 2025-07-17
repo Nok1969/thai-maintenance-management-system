@@ -409,6 +409,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Status management routes
+  app.patch("/api/records/:id/status", 
+    isAuthenticated, 
+    validateParams(idParamSchema),
+    validateBody(z.object({
+      status: z.enum(['pending', 'in_progress', 'completed', 'cancelled'])
+    })),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const technicianId = getUserId(req);
+        
+        const updatedRecord = await storage.updateMaintenanceRecordStatus(id, status, technicianId);
+        res.json(updatedRecord);
+      } catch (error) {
+        console.error("Error updating record status:", error);
+        res.status(500).json({ message: "Failed to update record status" });
+      }
+    }
+  );
+
+  app.post("/api/records/:id/start", 
+    isAuthenticated, 
+    validateParams(idParamSchema),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const technicianId = getUserId(req);
+        
+        const updatedRecord = await storage.startMaintenanceWork(id, technicianId);
+        res.json(updatedRecord);
+      } catch (error) {
+        console.error("Error starting maintenance work:", error);
+        res.status(500).json({ message: "Failed to start maintenance work" });
+      }
+    }
+  );
+
+  app.post("/api/records/:id/complete", 
+    isAuthenticated, 
+    validateParams(idParamSchema),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const technicianId = getUserId(req);
+        
+        const updatedRecord = await storage.completeMaintenanceWork(id, technicianId);
+        res.json(updatedRecord);
+      } catch (error) {
+        console.error("Error completing maintenance work:", error);
+        res.status(500).json({ message: "Failed to complete maintenance work" });
+      }
+    }
+  );
+
+  app.post("/api/records/:id/cancel", 
+    isAuthenticated, 
+    validateParams(idParamSchema),
+    async (req: AuthenticatedRequest, res) => {
+      try {
+        const { id } = req.params;
+        const technicianId = getUserId(req);
+        
+        const updatedRecord = await storage.cancelMaintenanceWork(id, technicianId);
+        res.json(updatedRecord);
+      } catch (error) {
+        console.error("Error cancelling maintenance work:", error);
+        res.status(500).json({ message: "Failed to cancel maintenance work" });
+      }
+    }
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }

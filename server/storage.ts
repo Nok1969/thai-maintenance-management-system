@@ -57,6 +57,12 @@ export interface IStorage {
   updateMaintenanceRecord(id: number, record: UpdateMaintenanceRecord): Promise<MaintenanceRecord>;
   deleteMaintenanceRecord(id: number): Promise<void>;
 
+  // Status management operations
+  updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: string): Promise<MaintenanceRecord>;
+  startMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
+  completeMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
+  cancelMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
+
   // Dashboard statistics
   getDashboardStats(): Promise<{
     totalMachines: number;
@@ -574,6 +580,45 @@ export class DatabaseStorage implements IStorage {
     return withDatabaseErrorHandling(async () => {
       await db.delete(maintenanceRecords).where(eq(maintenanceRecords.id, id));
     }, 'Maintenance record deletion');
+  }
+
+  // Status management methods
+  async updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: string): Promise<MaintenanceRecord> {
+    const existingRecord = await this.getMaintenanceRecord(id);
+    if (!existingRecord) {
+      throw new Error('Maintenance record not found');
+    }
+
+    const updateData: Partial<MaintenanceRecord> = { 
+      status, 
+      updatedAt: new Date() 
+    };
+
+    // Auto-set completedAt when status changes to completed
+    if (status === 'completed') {
+      updateData.completedAt = new Date();
+    }
+
+    return withDatabaseErrorHandling(async () => {
+      const [updatedRecord] = await db
+        .update(maintenanceRecords)
+        .set(updateData)
+        .where(eq(maintenanceRecords.id, id))
+        .returning();
+      return updatedRecord;
+    }, 'Maintenance record status update');
+  }
+
+  async startMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+    return this.updateMaintenanceRecordStatus(id, 'in_progress', technicianId);
+  }
+
+  async completeMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+    return this.updateMaintenanceRecordStatus(id, 'completed', technicianId);
+  }
+
+  async cancelMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+    return this.updateMaintenanceRecordStatus(id, 'cancelled', technicianId);
   }
 
   // Dashboard statistics
