@@ -42,7 +42,7 @@ export default function Machines() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: machines, isLoading: machinesLoading } = useQuery({
+  const { data: machines = [], isLoading: machinesLoading } = useQuery({
     queryKey: ["/api/machines", { page: "1", limit: "10" }],
     queryFn: () => apiRequest("GET", "/api/machines?page=1&limit=10"),
     retry: false,
@@ -88,7 +88,7 @@ export default function Machines() {
     </div>;
   }
 
-  const filteredMachines = machines?.filter((machine: Machine) => {
+  const filteredMachines = (Array.isArray(machines) ? machines : []).filter((machine: Machine) => {
     const matchesSearch = machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          machine.machineId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          machine.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -96,10 +96,10 @@ export default function Machines() {
     const matchesStatus = statusFilter === "all" || machine.status === statusFilter;
     const matchesLocation = locationFilter === "all" || machine.location === locationFilter;
     return matchesSearch && matchesStatus && matchesLocation;
-  }) || [];
+  });
 
   // Get unique locations for filter
-  const uniqueLocations = [...new Set(machines?.map((machine: Machine) => machine.location) || [])];
+  const uniqueLocations = [...new Set((Array.isArray(machines) ? machines : []).map((machine: Machine) => machine.location))];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
