@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { dosProtection } from "./utils/security";
+import { dosProtection, lightRateLimit } from "./utils/security";
 import { parsePositiveInteger, parseOptionalNumber, validateDateRange } from "./utils/validation";
 import { 
   validateQuery, 
@@ -25,6 +25,17 @@ import type { AuthenticatedRequest, OptionalAuthRequest } from "@shared/types";
 import { getUserId, isAuthenticatedRequest } from "@shared/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint (no authentication required)
+  app.get("/api/health", lightRateLimit, (_, res) => {
+    res.status(200).json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version || "1.0.0",
+      environment: process.env.NODE_ENV || "development"
+    });
+  });
+
   // Auth middleware
   await setupAuth(app);
 

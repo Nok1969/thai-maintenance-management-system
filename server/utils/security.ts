@@ -116,3 +116,16 @@ export const dosProtection = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Light rate limiting for health checks and public endpoints
+export const lightRateLimit = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute  
+  max: process.env.NODE_ENV === 'production' ? 300 : 1000, // 300 requests per minute (prod), 1000 (dev)
+  message: {
+    error: "Too many health check requests from this IP, please try again later.",
+    retryAfter: "1 minute"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
