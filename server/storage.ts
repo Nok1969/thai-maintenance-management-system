@@ -21,6 +21,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, gte, lte, isNull, or, like, sql } from "drizzle-orm";
+import { withDatabaseErrorHandling } from "./utils/dbErrors";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -81,18 +82,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    return withDatabaseErrorHandling(async () => {
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return user;
+    }, 'User upsert');
   }
 
   // Machine operations
@@ -128,19 +131,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMachine(machine: InsertMachine): Promise<Machine> {
-    const [newMachine] = await db.insert(machines).values(machine).returning();
-    return newMachine;
+    return withDatabaseErrorHandling(async () => {
+      const [newMachine] = await db.insert(machines).values(machine).returning();
+      return newMachine;
+    }, 'Machine creation');
   }
 
   async updateMachine(id: number, machine: Partial<InsertMachine>, changedBy?: string): Promise<Machine> {
     // Get the old machine data for history tracking
     const oldMachine = await this.getMachine(id);
     
-    const [updatedMachine] = await db
-      .update(machines)
-      .set({ ...machine, updatedAt: new Date() })
-      .where(eq(machines.id, id))
-      .returning();
+    const [updatedMachine] = await withDatabaseErrorHandling(async () => {
+      const result = await db
+        .update(machines)
+        .set({ ...machine, updatedAt: new Date() })
+        .where(eq(machines.id, id))
+        .returning();
+      return result[0];
+    }, 'Machine update');
 
     // Create history record if changedBy is provided
     if (changedBy && oldMachine) {
@@ -187,7 +195,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMachine(id: number): Promise<void> {
-    await db.delete(machines).where(eq(machines.id, id));
+    return withDatabaseErrorHandling(async () => {
+      await db.delete(machines).where(eq(machines.id, id));
+    }, 'Machine deletion');
   }
 
   // Maintenance schedule operations
@@ -313,21 +323,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
-    const [newSchedule] = await db.insert(maintenanceSchedules).values(schedule).returning();
-    return newSchedule;
+    return withDatabaseErrorHandling(async () => {
+      const [newSchedule] = await db.insert(maintenanceSchedules).values(schedule).returning();
+      return newSchedule;
+    }, 'Maintenance schedule creation');
   }
 
   async updateMaintenanceSchedule(id: number, schedule: Partial<InsertMaintenanceSchedule>): Promise<MaintenanceSchedule> {
-    const [updatedSchedule] = await db
-      .update(maintenanceSchedules)
-      .set({ ...schedule, updatedAt: new Date() })
-      .where(eq(maintenanceSchedules.id, id))
-      .returning();
-    return updatedSchedule;
+    return withDatabaseErrorHandling(async () => {
+      const [updatedSchedule] = await db
+        .update(maintenanceSchedules)
+        .set({ ...schedule, updatedAt: new Date() })
+        .where(eq(maintenanceSchedules.id, id))
+        .returning();
+      return updatedSchedule;
+    }, 'Maintenance schedule update');
   }
 
   async deleteMaintenanceSchedule(id: number): Promise<void> {
-    await db.delete(maintenanceSchedules).where(eq(maintenanceSchedules.id, id));
+    return withDatabaseErrorHandling(async () => {
+      await db.delete(maintenanceSchedules).where(eq(maintenanceSchedules.id, id));
+    }, 'Maintenance schedule deletion');
   }
 
   // Maintenance record operations
@@ -465,21 +481,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMaintenanceRecord(record: InsertMaintenanceRecord): Promise<MaintenanceRecord> {
-    const [newRecord] = await db.insert(maintenanceRecords).values(record).returning();
-    return newRecord;
+    return withDatabaseErrorHandling(async () => {
+      const [newRecord] = await db.insert(maintenanceRecords).values(record).returning();
+      return newRecord;
+    }, 'Maintenance record creation');
   }
 
   async updateMaintenanceRecord(id: number, record: Partial<InsertMaintenanceRecord>): Promise<MaintenanceRecord> {
-    const [updatedRecord] = await db
-      .update(maintenanceRecords)
-      .set({ ...record, updatedAt: new Date() })
-      .where(eq(maintenanceRecords.id, id))
-      .returning();
-    return updatedRecord;
+    return withDatabaseErrorHandling(async () => {
+      const [updatedRecord] = await db
+        .update(maintenanceRecords)
+        .set({ ...record, updatedAt: new Date() })
+        .where(eq(maintenanceRecords.id, id))
+        .returning();
+      return updatedRecord;
+    }, 'Maintenance record update');
   }
 
   async deleteMaintenanceRecord(id: number): Promise<void> {
-    await db.delete(maintenanceRecords).where(eq(maintenanceRecords.id, id));
+    return withDatabaseErrorHandling(async () => {
+      await db.delete(maintenanceRecords).where(eq(maintenanceRecords.id, id));
+    }, 'Maintenance record deletion');
   }
 
   // Dashboard statistics
@@ -609,8 +631,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMachineHistory(history: InsertMachineHistory): Promise<MachineHistory> {
-    const [newHistory] = await db.insert(machineHistory).values(history).returning();
-    return newHistory;
+    return withDatabaseErrorHandling(async () => {
+      const [newHistory] = await db.insert(machineHistory).values(history).returning();
+      return newHistory;
+    }, 'Machine history creation');
   }
 }
 

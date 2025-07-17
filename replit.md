@@ -77,6 +77,13 @@ This is a full-stack maintenance management system built for industrial machiner
 - No authentication required for CI/CD, Docker, Cloud Run, Replit monitoring
 - Includes proper rate limiting headers and JSON response format
 
+✓ **Database Error Handling Enhancement**:
+- Created comprehensive database error parsing utility (server/utils/dbErrors.ts)
+- Added try/catch wrapper for all create/update/delete operations
+- Implemented user-friendly error messages in Thai language
+- Added proper constraint violation handling (unique, foreign key, not null)
+- Enhanced error logging with development vs production modes
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
