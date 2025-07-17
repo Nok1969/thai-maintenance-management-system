@@ -421,12 +421,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { id } = req.params;
         const { status } = req.body;
         const technicianId = getUserId(req);
+        const updatedAt = new Date();
         
         const updatedRecord = await storage.updateMaintenanceRecordStatus(id, status, technicianId);
-        res.json(updatedRecord);
+        
+        res.json({
+          status: "success",
+          message: "Status updated successfully",
+          updatedRecord,
+          updatedBy: technicianId,
+          updatedAt,
+          previousStatus: req.body.previousStatus || null,
+          action: "status_update"
+        });
       } catch (error) {
         console.error("Error updating record status:", error);
-        res.status(500).json({ message: "Failed to update record status" });
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to update record status",
+          error: error instanceof Error ? error.message : "Unknown error",
+          updatedAt: new Date()
+        });
       }
     }
   );
@@ -438,12 +453,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { id } = req.params;
         const technicianId = getUserId(req);
+        const updatedAt = new Date();
         
         const updatedRecord = await storage.startMaintenanceWork(id, technicianId);
-        res.json(updatedRecord);
+        
+        res.json({
+          status: "success",
+          message: "Maintenance work started successfully",
+          updatedRecord,
+          updatedBy: technicianId,
+          updatedAt,
+          previousStatus: "pending",
+          currentStatus: "in_progress",
+          action: "start_work",
+          workflowStep: "work_started"
+        });
       } catch (error) {
         console.error("Error starting maintenance work:", error);
-        res.status(500).json({ message: "Failed to start maintenance work" });
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to start maintenance work",
+          error: error instanceof Error ? error.message : "Unknown error",
+          updatedAt: new Date(),
+          action: "start_work"
+        });
       }
     }
   );
@@ -455,12 +488,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { id } = req.params;
         const technicianId = getUserId(req);
+        const updatedAt = new Date();
         
         const updatedRecord = await storage.completeMaintenanceWork(id, technicianId);
-        res.json(updatedRecord);
+        
+        res.json({
+          status: "success",
+          message: "Maintenance work completed successfully",
+          updatedRecord,
+          updatedBy: technicianId,
+          updatedAt,
+          previousStatus: "in_progress",
+          currentStatus: "completed",
+          action: "complete_work",
+          workflowStep: "work_completed",
+          completedAt: updatedRecord.completedAt
+        });
       } catch (error) {
         console.error("Error completing maintenance work:", error);
-        res.status(500).json({ message: "Failed to complete maintenance work" });
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to complete maintenance work",
+          error: error instanceof Error ? error.message : "Unknown error",
+          updatedAt: new Date(),
+          action: "complete_work"
+        });
       }
     }
   );
@@ -472,12 +524,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const { id } = req.params;
         const technicianId = getUserId(req);
+        const updatedAt = new Date();
         
         const updatedRecord = await storage.cancelMaintenanceWork(id, technicianId);
-        res.json(updatedRecord);
+        
+        res.json({
+          status: "success",
+          message: "Maintenance work cancelled successfully",
+          updatedRecord,
+          updatedBy: technicianId,
+          updatedAt,
+          previousStatus: updatedRecord.status === "cancelled" ? "in_progress" : "pending",
+          currentStatus: "cancelled",
+          action: "cancel_work",
+          workflowStep: "work_cancelled"
+        });
       } catch (error) {
         console.error("Error cancelling maintenance work:", error);
-        res.status(500).json({ message: "Failed to cancel maintenance work" });
+        res.status(500).json({ 
+          status: "error",
+          message: "Failed to cancel maintenance work",
+          error: error instanceof Error ? error.message : "Unknown error",
+          updatedAt: new Date(),
+          action: "cancel_work"
+        });
       }
     }
   );

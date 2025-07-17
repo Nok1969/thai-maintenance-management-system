@@ -50,6 +50,7 @@ export const helmetConfig = helmet({
       scriptSrc: [
         "'self'",
         process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "", // For Vite HMR
+        process.env.NODE_ENV === 'development' ? "'unsafe-inline'" : "", // For Vite development
       ].filter(Boolean),
       imgSrc: [
         "'self'", 
@@ -59,6 +60,7 @@ export const helmetConfig = helmet({
       connectSrc: [
         "'self'",
         process.env.NODE_ENV === 'development' ? "ws://localhost:*" : "", // For Vite HMR
+        process.env.NODE_ENV === 'development' ? "wss://localhost:*" : "", // For Vite secure WebSocket
         "https://replit.com", // For Replit Auth
       ].filter(Boolean),
       frameSrc: ["'none'"],

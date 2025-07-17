@@ -22,13 +22,19 @@ export function StatusActions({ record, onStatusChange }: StatusActionsProps) {
         method: "POST",
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "เริ่มงานแล้ว",
-        description: "เริ่มต้นการทำงานบำรุงรักษาแล้ว",
+        description: `เริ่มต้นการทำงานบำรุงรักษาแล้ว - ${data.message}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/records"] });
       onStatusChange?.("in_progress");
+      console.log("Work started:", {
+        action: data.action,
+        updatedBy: data.updatedBy,
+        updatedAt: data.updatedAt,
+        workflowStep: data.workflowStep
+      });
     },
     onError: (error) => {
       toast({
@@ -45,13 +51,20 @@ export function StatusActions({ record, onStatusChange }: StatusActionsProps) {
         method: "POST",
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "เสร็จสิ้น",
-        description: "งานบำรุงรักษาเสร็จสิ้นแล้ว",
+        description: `งานบำรุงรักษาเสร็จสิ้นแล้ว - ${data.message}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/records"] });
       onStatusChange?.("completed");
+      console.log("Work completed:", {
+        action: data.action,
+        updatedBy: data.updatedBy,
+        updatedAt: data.updatedAt,
+        completedAt: data.completedAt,
+        workflowStep: data.workflowStep
+      });
     },
     onError: (error) => {
       toast({
@@ -68,13 +81,20 @@ export function StatusActions({ record, onStatusChange }: StatusActionsProps) {
         method: "POST",
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "ยกเลิกแล้ว",
-        description: "ยกเลิกงานบำรุงรักษาแล้ว",
+        description: `ยกเลิกงานบำรุงรักษาแล้ว - ${data.message}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/records"] });
       onStatusChange?.("cancelled");
+      console.log("Work cancelled:", {
+        action: data.action,
+        updatedBy: data.updatedBy,
+        updatedAt: data.updatedAt,
+        previousStatus: data.previousStatus,
+        workflowStep: data.workflowStep
+      });
     },
     onError: (error) => {
       toast({
