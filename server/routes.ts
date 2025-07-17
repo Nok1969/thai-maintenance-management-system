@@ -16,8 +16,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
+      // Additional safety check for user claims
+      if (!req.user || !req.user.claims || !req.user.claims.sub) {
+        return res.status(401).json({ message: "Invalid user session" });
+      }
+      
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -105,11 +115,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/machines/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/machines/:id", isAuthenticated, async (req: any, res) => {
     try {
+      // Additional safety check for user claims
+      if (!req.user || !req.user.claims || !req.user.claims.sub) {
+        return res.status(401).json({ message: "Invalid user session" });
+      }
+      
       const id = parseInt(req.params.id);
       const machineData = insertMachineSchema.partial().parse(req.body);
-      const userId = (req.user as any)?.claims?.sub;
+      const userId = req.user.claims.sub;
       const machine = await storage.updateMachine(id, machineData, userId);
       res.json(machine);
     } catch (error) {
