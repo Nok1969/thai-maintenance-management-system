@@ -76,10 +76,18 @@ export function getSession() {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true, // Prevent XSS attacks
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // CSRF protection
       maxAge: sessionTtl,
+      // Additional security for production
+      ...(process.env.NODE_ENV === 'production' && {
+        domain: process.env.COOKIE_DOMAIN, // Set if using custom domain
+      })
     },
+    // Enhanced session security
+    name: process.env.NODE_ENV === 'production' ? 'sessionId' : 'connect.sid', // Hide default session name
+    rolling: true, // Extend session on activity
   });
 }
 
