@@ -141,8 +141,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMachine(id: number, machine: UpdateMachine, changedBy?: string): Promise<Machine> {
+    // Check if there are any changes to apply
+    if (Object.keys(machine).length === 0) {
+      const existingMachine = await this.getMachine(id);
+      if (!existingMachine) {
+        throw new Error('Machine not found');
+      }
+      return existingMachine;
+    }
+
     // Get the old machine data for history tracking
     const oldMachine = await this.getMachine(id);
+    if (!oldMachine) {
+      throw new Error('Machine not found');
+    }
+    
+    // Check if any fields actually changed
+    const hasChanges = Object.entries(machine).some(([key, value]) => {
+      return oldMachine[key as keyof Machine] !== value;
+    });
+    
+    if (!hasChanges) {
+      return oldMachine; // No changes, return existing data
+    }
     
     const updatedMachine = await withDatabaseErrorHandling(async () => {
       const result = await db
@@ -333,6 +354,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaintenanceSchedule(id: number, schedule: UpdateMaintenanceSchedule): Promise<MaintenanceSchedule> {
+    // Check if there are any changes to apply
+    if (Object.keys(schedule).length === 0) {
+      const existingSchedule = await this.getMaintenanceSchedule(id);
+      if (!existingSchedule) {
+        throw new Error('Maintenance schedule not found');
+      }
+      return existingSchedule;
+    }
+
+    // Get existing schedule to check for changes
+    const existingSchedule = await this.getMaintenanceSchedule(id);
+    if (!existingSchedule) {
+      throw new Error('Maintenance schedule not found');
+    }
+    
+    // Check if any fields actually changed
+    const hasChanges = Object.entries(schedule).some(([key, value]) => {
+      return existingSchedule[key as keyof MaintenanceSchedule] !== value;
+    });
+    
+    if (!hasChanges) {
+      return existingSchedule; // No changes, return existing data
+    }
+
     return withDatabaseErrorHandling(async () => {
       const [updatedSchedule] = await db
         .update(maintenanceSchedules)
@@ -491,6 +536,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaintenanceRecord(id: number, record: UpdateMaintenanceRecord): Promise<MaintenanceRecord> {
+    // Check if there are any changes to apply
+    if (Object.keys(record).length === 0) {
+      const existingRecord = await this.getMaintenanceRecord(id);
+      if (!existingRecord) {
+        throw new Error('Maintenance record not found');
+      }
+      return existingRecord;
+    }
+
+    // Get existing record to check for changes
+    const existingRecord = await this.getMaintenanceRecord(id);
+    if (!existingRecord) {
+      throw new Error('Maintenance record not found');
+    }
+    
+    // Check if any fields actually changed
+    const hasChanges = Object.entries(record).some(([key, value]) => {
+      return existingRecord[key as keyof MaintenanceRecord] !== value;
+    });
+    
+    if (!hasChanges) {
+      return existingRecord; // No changes, return existing data
+    }
+
     return withDatabaseErrorHandling(async () => {
       const [updatedRecord] = await db
         .update(maintenanceRecords)
