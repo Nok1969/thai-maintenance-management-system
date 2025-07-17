@@ -121,3 +121,13 @@ export function logDebug(message: string) {
     console.debug(`${timestamp} [DEBUG] ${message}`);
   }
 }
+
+// Performance logging helper
+export function logPerformance(operation: string, startTime: number) {
+  const duration = Date.now() - startTime;
+  if (duration > 1000) { // Log slow operations (>1s)
+    logWarning(`Slow operation: ${operation} took ${duration}ms`);
+  } else if (process.env.NODE_ENV === 'development') {
+    logDebug(`${operation} completed in ${duration}ms`);
+  }
+}

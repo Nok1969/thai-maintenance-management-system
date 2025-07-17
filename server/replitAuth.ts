@@ -119,7 +119,11 @@ export async function setupAuth(app: Express) {
   ) => {
     const user = {};
     updateUserSession(user, tokens);
+    
+    // Only upsert user on fresh login, not on token refresh
+    // This is called only during OAuth callback, not during isAuthenticated middleware
     await upsertUser(tokens.claims());
+    
     verified(null, user);
   };
 
@@ -219,7 +223,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   try {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    
+    // Only update session tokens, do NOT upsert user data
+    // User data should only be updated on fresh login, not on token refresh
     updateUserSession(user, tokenResponse);
+    
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
