@@ -21,6 +21,7 @@ const corsOrigins = process.env.NODE_ENV === 'development'
       // Production: Restrict to specific domains
       'https://*.replit.app',
       'https://*.replit.co',
+      'https://*.replit.dev',
       // Add custom domains if any
       ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
     ];
@@ -73,7 +74,7 @@ app.use(createLoggingMiddleware({
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https:; " +
-        "connect-src 'self' https:; " +
+        "connect-src 'self' https: ws: wss:; " +
         "font-src 'self' https:; " +
         "frame-ancestors 'none';"
       );
@@ -94,28 +95,60 @@ app.use(createLoggingMiddleware({
     res.status(status).json({ message });
   });
 
-  // Register all API routes and get the HTTP server
-  const server = await registerRoutes(app);
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = validatePort(process.env.PORT);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    logInfo(`serving on port ${port}`);
+  // Add global error handlers
+  process.on('uncaughtException', (error) => {
+    logError('Uncaught exception:', error);
+    process.exit(1);
   });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    logError('Unhandled rejection:', reason);
+    process.exit(1);
+  });
+
+  // Register all API routes and get the HTTP server
+  try {
+    const server = await registerRoutes(app);
+
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // ALWAYS serve the app on the port specified in the environment variable PORT
+    // Other ports are firewalled. Default to 5000 if not specified.
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = validatePort(process.env.PORT);
+    
+    // Add error handling for server startup
+    server.on('error', (error: any) => {
+      logError('Server error:', error);
+      if (error.code === 'EADDRINUSE') {
+        logError(`Port ${port} is already in use`);
+        process.exit(1);
+      }
+    });
+
+    server.listen(port, () => {
+      logInfo(`serving on port ${port}`);
+      logInfo(`Server ready at http://0.0.0.0:${port}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      logInfo('Received SIGTERM, shutting down gracefully');
+      server.close(() => {
+        logInfo('Server closed');
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    logError('Failed to start server:', error);
+    process.exit(1);
+  }
 })();

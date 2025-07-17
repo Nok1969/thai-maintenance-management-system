@@ -119,6 +119,12 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Skip OIDC setup in development if no proper config
+  if (process.env.NODE_ENV === 'development' && !process.env.REPL_ID) {
+    console.log('Development mode: Skipping OIDC setup');
+    return;
+  }
+
   let config;
   try {
     config = await getOidcConfig();
