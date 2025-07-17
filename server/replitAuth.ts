@@ -122,6 +122,20 @@ export async function setupAuth(app: Express) {
   // Skip OIDC setup in development if no proper config
   if (process.env.NODE_ENV === 'development' && !process.env.REPL_ID) {
     console.log('Development mode: Skipping OIDC setup');
+    
+    // Add mock authentication for development
+    passport.serializeUser((user: any, cb) => cb(null, user));
+    passport.deserializeUser((user: any, cb) => cb(null, user));
+    
+    // Mock login route for development
+    app.get("/api/login", (req, res) => {
+      res.redirect("/");
+    });
+    
+    app.get("/api/logout", (req, res) => {
+      res.redirect("/");
+    });
+    
     return;
   }
 
@@ -233,6 +247,17 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Development mode: Skip authentication
+  if (process.env.NODE_ENV === 'development' && !process.env.REPL_ID) {
+    // Mock user for development
+    req.user = {
+      claims: { sub: "dev-user-123" },
+      access_token: "dev-token",
+      expires_at: Math.floor(Date.now() / 1000) + 3600
+    };
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!user || !req.isAuthenticated() || !user.expires_at) {

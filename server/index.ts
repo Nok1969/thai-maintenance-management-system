@@ -97,13 +97,19 @@ app.use(createLoggingMiddleware({
 
   // Add global error handlers
   process.on('uncaughtException', (error) => {
-    logError('Uncaught exception:', error);
-    process.exit(1);
+    console.error('Uncaught exception:', error);
+    // Don't exit in development to help debug
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   });
 
   process.on('unhandledRejection', (reason, promise) => {
-    logError('Unhandled rejection:', reason);
-    process.exit(1);
+    console.error('Unhandled rejection:', reason);
+    // Don't exit in development to help debug
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   });
 
   // Register all API routes and get the HTTP server
@@ -125,18 +131,25 @@ app.use(createLoggingMiddleware({
     // It is the only port that is not firewalled.
     const port = validatePort(process.env.PORT);
     
+    // Simple health check route
+    app.get('/api/health', (req, res) => {
+      res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    });
+
     // Add error handling for server startup
     server.on('error', (error: any) => {
-      logError('Server error:', error);
+      console.error('Server error:', error);
       if (error.code === 'EADDRINUSE') {
-        logError(`Port ${port} is already in use`);
-        process.exit(1);
+        console.error(`Port ${port} is already in use`);
+        if (process.env.NODE_ENV === 'production') {
+          process.exit(1);
+        }
       }
     });
 
-    server.listen(port, () => {
-      logInfo(`serving on port ${port}`);
-      logInfo(`Server ready at http://0.0.0.0:${port}`);
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`serving on port ${port}`);
+      console.log(`Server ready at http://0.0.0.0:${port}`);
     });
 
     // Graceful shutdown

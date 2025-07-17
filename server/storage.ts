@@ -86,11 +86,37 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
+    // Development mode: return mock user
+    if (process.env.NODE_ENV === 'development' && id === 'dev-user-123') {
+      return {
+        id: 'dev-user-123',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        profileImageUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+    
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // Development mode: return mock user
+    if (process.env.NODE_ENV === 'development' && userData.id === 'dev-user-123') {
+      return {
+        id: 'dev-user-123',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        profileImageUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+    
     return withDatabaseErrorHandling(async () => {
       const [user] = await db
         .insert(users)
