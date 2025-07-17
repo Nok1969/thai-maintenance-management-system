@@ -1,104 +1,118 @@
-import type { Request, Response, NextFunction } from "express";
-import { logWarning } from "./logger";
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import type { Express } from 'express';
 
-// Rate limiting store (in-memory for simplicity, use Redis in production with multiple instances)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Simple rate limiting middleware
-export function createRateLimit(options: {
-  windowMs: number;
-  maxRequests: number;
-  message?: string;
-  skipSuccessfulRequests?: boolean;
-}) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    // Skip rate limiting in development
-    if (process.env.NODE_ENV === 'development') {
-      return next();
-    }
-
-    const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-    const key = `${clientIp}:${req.path}`;
-    const now = Date.now();
-    
-    // Clean up expired entries
-    if (Math.random() < 0.1) { // 10% chance to clean up
-      for (const [k, v] of rateLimitStore.entries()) {
-        if (v.resetTime < now) {
-          rateLimitStore.delete(k);
-        }
-      }
-    }
-    
-    const record = rateLimitStore.get(key);
-    
-    if (!record || record.resetTime < now) {
-      // New window
-      rateLimitStore.set(key, {
-        count: 1,
-        resetTime: now + options.windowMs
-      });
-      return next();
-    }
-    
-    if (record.count >= options.maxRequests) {
-      logWarning(`Rate limit exceeded for ${clientIp} on ${req.path}`);
-      return res.status(429).json({
-        message: options.message || "Too many requests, please try again later",
-        retryAfter: Math.ceil((record.resetTime - now) / 1000)
-      });
-    }
-    
-    record.count++;
-    next();
-  };
-}
-
-// Validation helper for environment-specific features
-export function requireProduction() {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV !== 'production') {
-      return res.status(403).json({ message: "This feature is only available in production" });
-    }
-    next();
-  };
-}
-
-// Security: Sanitize user input to prevent injection attacks
-export function sanitizeInput(input: any): any {
-  if (typeof input === 'string') {
-    // Basic HTML/JS sanitization
-    return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<[^>]*>/g, '')
-      .trim();
+// Rate limiting configuration
+export const apiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Stricter in production
+  message: {
+    error: 'Too many requests from this IP',
+    message: 'Please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for health checks and static assets
+  skip: (req) => {
+    return req.path.startsWith('/health') || 
+           req.path.startsWith('/static') ||
+           req.path.startsWith('/assets');
   }
-  
-  if (Array.isArray(input)) {
-    return input.map(sanitizeInput);
+});
+
+// Strict rate limiting for authentication endpoints
+export const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 5 : 50, // Very strict for auth
+  message: {
+    error: 'Too many authentication attempts',
+    message: 'Please wait before trying again'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful auth attempts
+});
+
+// Helmet security headers configuration
+export const helmetConfig = helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: [
+        "'self'", 
+        "'unsafe-inline'", // For Tailwind CSS
+        "https://fonts.googleapis.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com"
+      ],
+      scriptSrc: [
+        "'self'",
+        process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "", // For Vite HMR
+      ].filter(Boolean),
+      imgSrc: [
+        "'self'", 
+        "data:", 
+        "https:", // For profile images from Replit Auth
+      ],
+      connectSrc: [
+        "'self'",
+        process.env.NODE_ENV === 'development' ? "ws://localhost:*" : "", // For Vite HMR
+        "https://replit.com", // For Replit Auth
+      ].filter(Boolean),
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Disable for compatibility
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
   }
+});
+
+// Apply all security middleware
+export function setupSecurity(app: Express) {
+  // Security headers
+  app.use(helmetConfig);
   
-  if (input && typeof input === 'object') {
-    const sanitized: any = {};
-    for (const [key, value] of Object.entries(input)) {
-      // Sanitize key names too
-      const cleanKey = key.replace(/[^a-zA-Z0-9_]/g, '');
-      if (cleanKey) {
-        sanitized[cleanKey] = sanitizeInput(value);
-      }
-    }
-    return sanitized;
-  }
+  // Rate limiting
+  app.use('/api/auth', authRateLimit); // Strict rate limiting for auth routes
+  app.use('/api', apiRateLimit); // General rate limiting for API routes
   
-  return input;
+  // Additional security headers
+  app.use((req, res, next) => {
+    // Prevent clickjacking
+    res.setHeader('X-Frame-Options', 'DENY');
+    
+    // Prevent MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // Enable XSS protection
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    
+    // Referrer policy
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // Permissions policy
+    res.setHeader('Permissions-Policy', 
+      'geolocation=(), microphone=(), camera=(), payment=(), usb=()');
+    
+    next();
+  });
 }
 
-// Middleware to sanitize request body
-export function sanitizeRequestBody() {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (req.body) {
-      req.body = sanitizeInput(req.body);
-    }
-    next();
-  };
-}
+// DoS protection middleware
+export const dosProtection = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: process.env.NODE_ENV === 'production' ? 20 : 200, // Very strict for DoS protection
+  message: {
+    error: 'Request limit exceeded',
+    message: 'Server is busy, please try again later'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

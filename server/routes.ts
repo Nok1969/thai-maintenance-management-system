@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { dosProtection } from "./utils/security";
 import { parsePositiveInteger, parseOptionalNumber, validateDateRange } from "./utils/validation";
 import { 
   validateQuery, 
@@ -48,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/stats", isAuthenticated, async (req, res) => {
+  app.get("/api/dashboard/stats", isAuthenticated, dosProtection, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);

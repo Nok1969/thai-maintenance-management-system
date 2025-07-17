@@ -4,11 +4,15 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createLoggingMiddleware, logError, logInfo } from "./utils/logger";
 import { validatePort } from "./utils/validation";
+import { setupSecurity } from "./utils/security";
 
 const app = express();
 
 // Security: Trust proxy for proper client IP detection behind reverse proxy
 app.set("trust proxy", 1);
+
+// Apply security middleware early in the middleware stack
+setupSecurity(app);
 
 // Enhanced CORS configuration for security
 const corsOrigins = process.env.NODE_ENV === 'development' 
