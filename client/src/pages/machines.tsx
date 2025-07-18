@@ -16,6 +16,7 @@ import MachineForm from "@/components/forms/machine-form";
 import MachineHistory from "@/components/machine-history";
 import { Plus, Search, Settings, AlertTriangle, CheckCircle, Clock, MapPin, History, Eye } from "lucide-react";
 import type { Machine } from "@shared/schema";
+import { machineArraySchema } from "@shared/schema";
 
 export default function Machines() {
   const { toast } = useToast();
@@ -44,7 +45,10 @@ export default function Machines() {
 
   const { data: machines = [], isLoading: machinesLoading } = useQuery({
     queryKey: ["/api/machines", { page: "1", limit: "10" }],
-    queryFn: () => apiRequest("GET", "/api/machines?page=1&limit=10"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/machines?page=1&limit=10");
+      return machineArraySchema.parse(response);
+    },
     retry: false,
   });
 
@@ -246,6 +250,22 @@ export default function Machines() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : filteredMachines.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Settings className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ไม่มีเครื่องจักรในระบบ
+            </h3>
+            <p className="text-gray-500 mb-4">
+              เริ่มต้นโดยเพิ่มเครื่องจักรแรกของคุณ
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              เพิ่มเครื่องจักร
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

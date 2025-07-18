@@ -1,10 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { dashboardStatsSchema } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Cog, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 
 export default function DashboardStats() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/dashboard/stats");
+      return dashboardStatsSchema.parse(response);
+    },
     retry: false,
   });
 

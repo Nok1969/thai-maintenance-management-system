@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { machineArraySchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,10 @@ export default function MachineStatusOverview() {
 
   const { data: machines = [], isLoading } = useQuery({
     queryKey: ["/api/machines", { page: "1", limit: "20" }],
-    queryFn: () => apiRequest("GET", "/api/machines?page=1&limit=20"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/machines?page=1&limit=20");
+      return machineArraySchema.parse(response);
+    },
     retry: false,
   });
 

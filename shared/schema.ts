@@ -182,6 +182,55 @@ export const insertMachineHistorySchema = createInsertSchema(machineHistory).omi
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// API Response Validation Schemas
+export const machineSchema = z.object({
+  id: z.number(),
+  machineId: z.string(),
+  name: z.string(),
+  type: z.string(),
+  manufacturer: z.string().nullable(),
+  model: z.string().nullable(),
+  serialNumber: z.string().nullable(),
+  installationDate: z.string().nullable(),
+  location: z.string(),
+  department: z.string().nullable(),
+  status: z.string(),
+  manualUrl: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  specifications: z.string().nullable(),
+  notes: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const machineArraySchema = z.array(machineSchema);
+
+export const maintenanceScheduleSchema = z.object({
+  id: z.number(),
+  machineId: z.number(),
+  type: z.string(),
+  description: z.string().nullable(),
+  frequency: z.string(),
+  intervalDays: z.number(),
+  estimatedDuration: z.number().nullable(),
+  priority: z.string(),
+  lastMaintenanceDate: z.string().nullable(),
+  nextMaintenanceDate: z.string(),
+  assignedTo: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const maintenanceScheduleArraySchema = z.array(maintenanceScheduleSchema);
+
+export const dashboardStatsSchema = z.object({
+  totalMachines: z.string(),
+  pendingMaintenance: z.string(),
+  completedThisMonth: z.string(),
+  overdueItems: z.string(),
+});
+
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Machine = typeof machines.$inferSelect;
 export type UpdateMachine = Partial<Pick<InsertMachine, 
