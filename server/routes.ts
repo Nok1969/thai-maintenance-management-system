@@ -62,6 +62,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management routes
+  app.get('/api/users', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const currentUserId = getUserId(req);
+      const currentUser = await storage.getUser(currentUserId);
+      
+      // Only admins and managers can view users
+      if (currentUser?.role !== 'admin' && currentUser?.role !== 'manager') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.put('/api/users/:userId/role', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const currentUserId = getUserId(req);
+      const currentUser = await storage.getUser(currentUserId);
+      const targetUserId = req.params.userId;
+      const { role } = req.body;
+
+      // Only admins can change roles
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can change user roles" });
+      }
+
+      // Prevent self-role change
+      if (currentUserId === targetUserId) {
+        return res.status(400).json({ message: "Cannot change your own role" });
+      }
+
+      // Validate role
+      if (!['technician', 'manager', 'admin'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      const updatedUser = await storage.updateUserRole(targetUserId, role);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   // Dashboard routes
   app.get("/api/dashboard/stats", isAuthenticated, dosProtection, async (req: AuthenticatedRequest, res) => {
     try {

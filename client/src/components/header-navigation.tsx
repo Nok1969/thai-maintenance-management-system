@@ -2,11 +2,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Cog, Bell, ChevronDown } from "lucide-react";
+import { Cog, Bell, ChevronDown, User, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -20,6 +22,9 @@ export default function HeaderNavigation() {
     { name: "แผนการบำรุงรักษา", href: "/schedules", current: location === "/schedules" },
     { name: "บันทึกการบำรุงรักษา", href: "/records", current: location === "/records" },
     { name: "รายงาน", href: "/reports", current: location === "/reports" },
+    ...(user?.role === "admin" || user?.role === "manager" ? [
+      { name: "จัดการผู้ใช้", href: "/users", current: location === "/users" }
+    ] : []),
   ];
 
   const handleLogout = () => {
@@ -76,15 +81,31 @@ export default function HeaderNavigation() {
                       {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}`
-                      : user?.email || "ผู้ใช้งาน"}
-                  </span>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500">ID: {user?.id}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
                   <ChevronDown className="h-4 w-4 text-gray-400" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="pb-0">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      User ID: {user?.id}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   ออกจากระบบ
                 </DropdownMenuItem>

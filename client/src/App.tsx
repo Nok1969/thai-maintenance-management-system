@@ -11,6 +11,7 @@ import Machines from "@/pages/machines";
 import Schedules from "@/pages/schedules";
 import Records from "@/pages/records";
 import Reports from "@/pages/reports";
+import Users from "@/pages/users";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +27,7 @@ function Router() {
           <Route path="/schedules" component={Schedules} />
           <Route path="/records" component={Records} />
           <Route path="/reports" component={Reports} />
+          <Route path="/users" component={Users} />
         </>
       )}
       <Route component={NotFound} />
