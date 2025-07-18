@@ -113,10 +113,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes
-  app.get('/api/users', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/users', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = getUserId(req);
-      const currentUser = await storage.getUser(currentUserId);
+      const currentUser = req.user;
+      
+      // Only admins can create users
+      if (currentUser?.role !== 'admin') {
+        return res.status(403).json({ 
+          status: "error", 
+          message: "ไม่มีสิทธิ์ในการสร้างผู้ใช้",
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      const userData = createUserSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({
+          status: "error",
+          message: "ชื่อผู้ใช้นี้มีอยู่แล้ว",
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await PasswordUtils.hashPassword(userData.password);
+      
+      // Create user
+      const newUser = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.status(201).json({
+        status: "success",
+        message: "สร้างผู้ใช้สำเร็จ",
+        data: userWithoutPassword,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(400).json({
+        status: "error",
+        message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการสร้างผู้ใช้",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  app.get('/api/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = req.user;
       
       // Only admins and managers can view users
       if (currentUser?.role !== 'admin' && currentUser?.role !== 'manager') {
@@ -131,11 +182,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/users/:userId/role', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.put('/api/users/:userId/role', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUserId = getUserId(req);
-      const currentUser = await storage.getUser(currentUserId);
-      const targetUserId = req.params.userId;
+      const currentUser = req.user;
+      const targetUserId = parseInt(req.params.userId);
       const { role } = req.body;
 
       // Only admins can change roles
@@ -144,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Prevent self-role change
-      if (currentUserId === targetUserId) {
+      if (currentUser.id === targetUserId) {
         return res.status(400).json({ message: "Cannot change your own role" });
       }
 
