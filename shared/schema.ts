@@ -224,6 +224,27 @@ export const maintenanceScheduleSchema = z.object({
 
 export const maintenanceScheduleArraySchema = z.array(maintenanceScheduleSchema);
 
+export const maintenanceScheduleWithMachineSchema = z.object({
+  id: z.number(),
+  machineId: z.number(),
+  scheduleId: z.string(),
+  type: z.string(),
+  description: z.string().nullable(),
+  frequency: z.string(),
+  intervalDays: z.number(),
+  estimatedDuration: z.number().nullable(),
+  priority: z.string(),
+  lastMaintenanceDate: z.string().nullable(),
+  nextMaintenanceDate: z.string(),
+  assignedTo: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  machine: machineSchema,
+});
+
+export const maintenanceScheduleWithMachineArraySchema = z.array(maintenanceScheduleWithMachineSchema);
+
 export const dashboardStatsSchema = z.object({
   totalMachines: z.string(),
   pendingMaintenance: z.string(),

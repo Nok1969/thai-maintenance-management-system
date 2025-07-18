@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import ScheduleForm from "@/components/forms/schedule-form";
 import { Plus, Search, Calendar, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import type { MaintenanceScheduleWithMachine } from "@shared/schema";
+import { maintenanceScheduleWithMachineArraySchema } from "@shared/schema";
 
 export default function Schedules() {
   const { toast } = useToast();
@@ -36,9 +37,12 @@ export default function Schedules() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: schedules, isLoading: schedulesLoading } = useQuery({
+  const { data: schedules = [], isLoading: schedulesLoading } = useQuery({
     queryKey: ["/api/schedules", { page: "1", limit: "10" }],
-    queryFn: () => apiRequest("GET", "/api/schedules?page=1&limit=10"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/schedules?page=1&limit=10");
+      return maintenanceScheduleWithMachineArraySchema.parse(response);
+    },
     retry: false,
   });
 
@@ -82,13 +86,13 @@ export default function Schedules() {
     </div>;
   }
 
-  const filteredSchedules = schedules?.filter((schedule: MaintenanceScheduleWithMachine) => {
+  const filteredSchedules = (Array.isArray(schedules) ? schedules : []).filter((schedule: MaintenanceScheduleWithMachine) => {
     const matchesSearch = schedule.machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.scheduleId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === "all" || schedule.priority === priorityFilter;
     return matchesSearch && matchesPriority;
-  }) || [];
+  });
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -232,6 +236,22 @@ export default function Schedules() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : filteredSchedules.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Calendar className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ไม่มีแผนการบำรุงรักษาในระบบ
+            </h3>
+            <p className="text-gray-500 mb-4">
+              เริ่มต้นโดยเพิ่มแผนการบำรุงรักษาแรกของคุณ
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              เพิ่มแผนการบำรุงรักษา
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
