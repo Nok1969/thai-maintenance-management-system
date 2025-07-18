@@ -75,6 +75,17 @@ Preferred communication style: Simple, everyday language.
 - **User creation**: New users created automatically on first login (default: technician role)
 - **Role management**: Admin users can change roles through the UI
 
+## Post-Deployment User Management
+
+### Adding New Users:
+1. **Automatic**: Share app URL → users login with Replit Auth → auto-created (technician role)
+2. **Manual**: Admin can add users via database console with SQL commands
+3. **Role Changes**: Admin can modify roles through UI or database
+
+### Current Test Users (8 total):
+- Narongvit Sumpunt (40744724) - Manager
+- 3 additional managers, 4 technicians, 1 admin for testing
+
 ## System Architecture
 
 ### Frontend Architecture
