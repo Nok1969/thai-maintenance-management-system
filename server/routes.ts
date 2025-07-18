@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, authenticateUser, PasswordUtils } from "./auth";
 import { dosProtection, lightRateLimit } from "./utils/security";
 import { parsePositiveInteger, parseOptionalNumber, validateDateRange } from "./utils/validation";
 import { 
@@ -23,9 +23,12 @@ import {
   insertMachineSchema,
   insertMaintenanceScheduleSchema,
   insertMaintenanceRecordSchema,
+  loginUserSchema,
+  createUserSchema,
   type UpdateMachine,
   type UpdateMaintenanceSchedule,
   type UpdateMaintenanceRecord,
+  type User,
 } from "@shared/schema";
 import type { AuthenticatedRequest, OptionalAuthRequest } from "@shared/types";
 import { getUserId, isAuthenticatedRequest } from "@shared/types";
@@ -46,16 +49,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/auth/login', lightRateLimit, async (req, res) => {
     try {
-      const userId = getUserId(req);
-      const user = await storage.getUser(userId);
+      const { username, password } = loginUserSchema.parse(req.body);
       
+      const user = await authenticateUser(username, password);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(401).json({ 
+          status: "error", 
+          message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+          timestamp: new Date().toISOString()
+        });
       }
+
+      // Create session
+      req.session.userId = user.id;
       
-      res.json(user);
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        status: "success",
+        message: "เข้าสู่ระบบสำเร็จ",
+        data: userWithoutPassword,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(400).json({ 
+        status: "error", 
+        message: "ข้อมูลไม่ถูกต้อง",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  app.post('/api/auth/logout', lightRateLimit, (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ 
+          status: "error", 
+          message: "เกิดข้อผิดพลาดในการออกจากระบบ",
+          timestamp: new Date().toISOString()
+        });
+      }
+      res.json({
+        status: "success",
+        message: "ออกจากระบบสำเร็จ",
+        timestamp: new Date().toISOString()
+      });
+    });
+  });
+
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user as User;
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });

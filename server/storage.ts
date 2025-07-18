@@ -27,18 +27,20 @@ import { eq, desc, asc, and, gte, lte, isNull, or, like, sql } from "drizzle-orm
 import { withDatabaseErrorHandling } from "./utils/dbErrors";
 
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // User operations (username/password auth)
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  updateUserRole(id: string, role: string): Promise<User>;
+  updateUserRole(id: number, role: string): Promise<User>;
+  updateUserLastLogin(id: number): Promise<void>;
 
   // Machine operations
   getMachines(): Promise<Machine[]>;
   getMachine(id: number): Promise<MachineWithSchedules | undefined>;
   getMachineByMachineId(machineId: string): Promise<Machine | undefined>;
   createMachine(machine: InsertMachine): Promise<Machine>;
-  updateMachine(id: number, machine: UpdateMachine, changedBy?: string): Promise<Machine>;
+  updateMachine(id: number, machine: UpdateMachine, changedBy?: number): Promise<Machine>;
   deleteMachine(id: number): Promise<void>;
 
   // Maintenance schedule operations
@@ -54,16 +56,16 @@ export interface IStorage {
   getMaintenanceRecords(): Promise<MaintenanceRecordWithDetails[]>;
   getMaintenanceRecord(id: number): Promise<MaintenanceRecordWithDetails | undefined>;
   getMaintenanceRecordsByMachine(machineId: number): Promise<MaintenanceRecordWithDetails[]>;
-  getMaintenanceRecordsByTechnician(technicianId: string): Promise<MaintenanceRecordWithDetails[]>;
+  getMaintenanceRecordsByTechnician(technicianId: number): Promise<MaintenanceRecordWithDetails[]>;
   createMaintenanceRecord(record: InsertMaintenanceRecord): Promise<MaintenanceRecord>;
   updateMaintenanceRecord(id: number, record: UpdateMaintenanceRecord): Promise<MaintenanceRecord>;
   deleteMaintenanceRecord(id: number): Promise<void>;
 
   // Status management operations
-  updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: string): Promise<MaintenanceRecord>;
-  startMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
-  completeMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
-  cancelMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord>;
+  updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: number): Promise<MaintenanceRecord>;
+  startMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord>;
+  completeMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord>;
+  cancelMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord>;
 
   // Dashboard statistics
   getDashboardStats(): Promise<{
@@ -86,60 +88,45 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (mandatory for Replit Auth)
-  async getUser(id: string): Promise<User | undefined> {
-    // Development mode: return mock user
-    if (process.env.NODE_ENV === 'development' && id === 'dev-user-123') {
-      return {
-        id: 'dev-user-123',
-        email: 'dev@example.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        profileImageUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-    }
-    
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  // User operations (username/password auth)
+  async getUser(id: number): Promise<User | undefined> {
+    return withDatabaseErrorHandling(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    });
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    // Development mode: return mock user
-    if (process.env.NODE_ENV === 'development' && userData.id === 'dev-user-123') {
-      return {
-        id: 'dev-user-123',
-        email: 'dev@example.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        profileImageUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-    }
-    
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return withDatabaseErrorHandling(async () => {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    });
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
     return withDatabaseErrorHandling(async () => {
       const [user] = await db
         .insert(users)
         .values(userData)
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
-            ...userData,
-            updatedAt: new Date(),
-          },
-        })
         .returning();
       return user;
-    }, 'User upsert');
+    });
+  }
+
+  async updateUserLastLogin(id: number): Promise<void> {
+    return withDatabaseErrorHandling(async () => {
+      await db
+        .update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, id));
+    });
   }
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(users.createdAt);
   }
 
-  async updateUserRole(id: string, role: string): Promise<User> {
+  async updateUserRole(id: number, role: string): Promise<User> {
     return withDatabaseErrorHandling(async () => {
       const [user] = await db
         .update(users)
@@ -189,7 +176,7 @@ export class DatabaseStorage implements IStorage {
     }, 'Machine creation');
   }
 
-  async updateMachine(id: number, machine: UpdateMachine, changedBy?: string): Promise<Machine> {
+  async updateMachine(id: number, machine: UpdateMachine, changedBy?: number): Promise<Machine> {
     // Check if there are any changes to apply
     if (Object.keys(machine).length === 0) {
       const existingMachine = await this.getMachine(id);
@@ -543,7 +530,7 @@ export class DatabaseStorage implements IStorage {
     return results as MaintenanceRecordWithDetails[];
   }
 
-  async getMaintenanceRecordsByTechnician(technicianId: string): Promise<MaintenanceRecordWithDetails[]> {
+  async getMaintenanceRecordsByTechnician(technicianId: number): Promise<MaintenanceRecordWithDetails[]> {
     const results = await db
       .select({
         id: maintenanceRecords.id,
@@ -626,7 +613,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Status management methods
-  async updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: string): Promise<MaintenanceRecord> {
+  async updateMaintenanceRecordStatus(id: number, status: 'pending' | 'in_progress' | 'completed' | 'cancelled', technicianId: number): Promise<MaintenanceRecord> {
     const existingRecord = await this.getMaintenanceRecord(id);
     if (!existingRecord) {
       throw new Error('Maintenance record not found');
@@ -652,15 +639,15 @@ export class DatabaseStorage implements IStorage {
     }, 'Maintenance record status update');
   }
 
-  async startMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+  async startMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord> {
     return this.updateMaintenanceRecordStatus(id, 'in_progress', technicianId);
   }
 
-  async completeMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+  async completeMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord> {
     return this.updateMaintenanceRecordStatus(id, 'completed', technicianId);
   }
 
-  async cancelMaintenanceWork(id: number, technicianId: string): Promise<MaintenanceRecord> {
+  async cancelMaintenanceWork(id: number, technicianId: number): Promise<MaintenanceRecord> {
     return this.updateMaintenanceRecordStatus(id, 'cancelled', technicianId);
   }
 

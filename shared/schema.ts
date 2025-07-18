@@ -26,14 +26,18 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (mandatory for Replit Auth)
+// User storage table with username/password authentication
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
+  id: serial("id").primaryKey(),
+  username: varchar("username").notNull().unique(), // ชื่อผู้ใช้
+  password: varchar("password").notNull(), // รหัสผ่าน (hashed)
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("technician"), // manager, technician, admin
+  isActive: boolean("is_active").notNull().default(true), // สถานะการใช้งาน
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -84,7 +88,7 @@ export const maintenanceRecords = pgTable("maintenance_records", {
   scheduleId: integer("schedule_id").references(() => maintenanceSchedules.id),
   maintenanceDate: date("maintenance_date").notNull(), // วันที่ทำการบำรุงรักษา
   type: varchar("type").notNull(), // ประเภทการบำรุงรักษา
-  technicianId: varchar("technician_id").references(() => users.id).notNull(), // ช่างผู้ปฏิบัติงาน
+  technicianId: integer("technician_id").references(() => users.id).notNull(), // ช่างผู้ปฏิบัติงาน
   workDescription: text("work_description").notNull(), // รายละเอียดงานที่ทำ
   partsUsed: jsonb("parts_used"), // อะไหล่ที่ใช้
   cost: decimal("cost", { precision: 10, scale: 2 }), // ค่าใช้จ่าย
@@ -105,7 +109,7 @@ export const machineHistory = pgTable("machine_history", {
   changeDescription: text("change_description").notNull(), // คำอธิบายการเปลี่ยนแปลง
   oldValues: jsonb("old_values"), // ค่าเก่าก่อนเปลี่ยนแปลง
   newValues: jsonb("new_values"), // ค่าใหม่หลังเปลี่ยนแปลง
-  changedBy: varchar("changed_by").references(() => users.id).notNull(), // ผู้ทำการเปลี่ยนแปลง
+  changedBy: integer("changed_by").references(() => users.id).notNull(), // ผู้ทำการเปลี่ยนแปลง
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -178,9 +182,33 @@ export const insertMachineHistorySchema = createInsertSchema(machineHistory).omi
   createdAt: true,
 });
 
+// Insert schemas for users
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const loginUserSchema = z.object({
+  username: z.string().min(3, "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร"),
+  password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
+});
+
+export const createUserSchema = z.object({
+  username: z.string().min(3, "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร"),
+  password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง").optional(),
+  firstName: z.string().min(1, "กรุณาใส่ชื่อ"),
+  lastName: z.string().min(1, "กรุณาใส่นามสกุล"),
+  role: z.enum(["technician", "manager", "admin"]).default("technician"),
+});
+
 // Types
-export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginUser = z.infer<typeof loginUserSchema>;
+export type CreateUser = z.infer<typeof createUserSchema>;
 export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
 
 // API Response Validation Schemas
 export const machineSchema = z.object({

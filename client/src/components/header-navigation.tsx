@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Cog, Bell, ChevronDown, User, Settings, LogOut } from "lucide-react";
@@ -27,8 +28,20 @@ export default function HeaderNavigation() {
     ] : []),
   ];
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include',
+      });
+      // Invalidate user data and refresh
+      queryClient.clear();
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force reload anyway
+      window.location.reload();
+    }
   };
 
   return (
