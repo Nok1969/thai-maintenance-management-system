@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import RecordForm from "@/components/forms/record-form";
 import { Plus, Search, ClipboardCheck, CheckCircle, Clock, AlertTriangle, XCircle } from "lucide-react";
 import type { MaintenanceRecordWithDetails } from "@shared/schema";
+import { maintenanceRecordWithDetailsArraySchema } from "@shared/schema";
 
 export default function Records() {
   const { toast } = useToast();
@@ -36,11 +37,19 @@ export default function Records() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: records, isLoading: recordsLoading } = useQuery({
+  const {
+    data,
+    isLoading: recordsLoading
+  } = useQuery({
     queryKey: ["/api/records", { page: "1", limit: "10" }],
-    queryFn: () => apiRequest("GET", "/api/records?page=1&limit=10"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/records?page=1&limit=10");
+      return maintenanceRecordWithDetailsArraySchema.parse(response);
+    },
     retry: false,
   });
+
+  const records = Array.isArray(data) ? data : [];
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -82,7 +91,7 @@ export default function Records() {
     </div>;
   }
 
-  const filteredRecords = records?.filter((record: MaintenanceRecordWithDetails) => {
+  const filteredRecords = records.filter((record: MaintenanceRecordWithDetails) => {
     const matchesSearch = record.machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          record.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          record.recordId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,7 +99,7 @@ export default function Records() {
                          record.technician.lastName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || record.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }) || [];
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -245,6 +254,22 @@ export default function Records() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : filteredRecords.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <ClipboardCheck className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              ไม่มีบันทึกการบำรุงรักษาในระบบ
+            </h3>
+            <p className="text-gray-500 mb-4">
+              เริ่มต้นโดยเพิ่มบันทึกการบำรุงรักษาแรกของคุณ
+            </p>
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              เพิ่มบันทึกการบำรุงรักษา
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

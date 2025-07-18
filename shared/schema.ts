@@ -252,6 +252,35 @@ export const dashboardStatsSchema = z.object({
   overdueItems: z.string(),
 });
 
+export const maintenanceRecordWithDetailsSchema = z.object({
+  id: z.number(),
+  recordId: z.string(),
+  machineId: z.number(),
+  scheduleId: z.number().nullable(),
+  technicianId: z.string(),
+  maintenanceDate: z.string(),
+  type: z.string(),
+  workDescription: z.string().nullable(),
+  partsUsed: z.string().nullable(),
+  cost: z.string().nullable(),
+  duration: z.number().nullable(),
+  status: z.string(),
+  notes: z.string().nullable(),
+  workImages: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  machine: machineSchema,
+  technician: z.object({
+    id: z.string(),
+    firstName: z.string().nullable(),
+    lastName: z.string().nullable(),
+    email: z.string().nullable(),
+  }),
+});
+
+export const maintenanceRecordWithDetailsArraySchema = z.array(maintenanceRecordWithDetailsSchema);
+
 export type InsertMachine = z.infer<typeof insertMachineSchema>;
 export type Machine = typeof machines.$inferSelect;
 export type UpdateMachine = Partial<Pick<InsertMachine, 

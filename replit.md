@@ -7,8 +7,8 @@ This is a comprehensive machine maintenance management system designed for Thai 
 ## Recent Changes (July 17, 2025)
 
 ✓ **API Schema Validation & Runtime Error Prevention**:
-- Added comprehensive Zod validation schemas for all API responses (machineArraySchema, maintenanceScheduleArraySchema, maintenanceScheduleWithMachineArraySchema, dashboardStatsSchema)
-- Fixed critical runtime errors across all pages: machines?.filter, schedules?.filter, upcomingMaintenance?.slice with Array.isArray() checks
+- Added comprehensive Zod validation schemas for all API responses (machineArraySchema, maintenanceScheduleArraySchema, maintenanceScheduleWithMachineArraySchema, maintenanceRecordWithDetailsArraySchema, dashboardStatsSchema)
+- Fixed critical runtime errors across all pages: machines?.filter, schedules?.filter, records?.filter, upcomingMaintenance?.slice with Array.isArray() checks
 - Implemented comprehensive default fallbacks for API responses to prevent silent bugs
 - Enhanced empty state handling with user-friendly messages and action buttons
 - Improved error detection with schema parsing that throws immediately on invalid data
