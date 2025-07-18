@@ -67,6 +67,14 @@ This is a comprehensive machine maintenance management system designed for Thai 
 
 Preferred communication style: Simple, everyday language.
 
+## Authentication System Notes
+
+- **Passwordless Authentication**: Uses Replit Auth (OAuth 2.0/OpenID Connect)
+- **No passwords required**: Users login through existing Replit accounts
+- **Session management**: 7-day session timeout with automatic refresh
+- **User creation**: New users created automatically on first login (default: technician role)
+- **Role management**: Admin users can change roles through the UI
+
 ## System Architecture
 
 ### Frontend Architecture
