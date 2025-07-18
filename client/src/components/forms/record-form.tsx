@@ -232,13 +232,13 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
             <div className="space-y-2">
               <Label htmlFor="scheduleId">แผนการบำรุงรักษา (ถ้ามี)</Label>
               <Select
-                value={form.watch("scheduleId")?.toString() || ""}
+                value={form.watch("scheduleId")?.toString()}
                 onValueChange={(value) => {
-                  if (value) {
+                  if (value === "none") {
+                    form.setValue("scheduleId", undefined);
+                  } else {
                     const numValue = Number(value);
                     form.setValue("scheduleId", !isNaN(numValue) ? numValue : undefined);
-                  } else {
-                    form.setValue("scheduleId", undefined);
                   }
                 }}
               >
@@ -246,7 +246,7 @@ export default function RecordForm({ record, onSuccess }: RecordFormProps) {
                   <SelectValue placeholder="เลือกแผนการบำรุงรักษา (ถ้ามี)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">ไม่มี</SelectItem>
+                  <SelectItem value="none">ไม่มี</SelectItem>
                   {schedules?.map((schedule: MaintenanceSchedule) => (
                     <SelectItem key={schedule.id} value={schedule.id.toString()}>
                       {schedule.scheduleId} - {schedule.type}
